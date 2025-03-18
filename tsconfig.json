@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "es2016",
+
+    /* Modules */
+    "module": "commonjs",
+    "rootDir": "./src",
+
+    /* Emit */
+
+    "outDir": "./dist",
+
+    /* Interop Constraints */
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Type Checking */
+    "strict": true,
+
+    /* Completeness */
+
+    "skipLibCheck": true
+  },
+  "include": ["src", "tsconfig.json"],
+  "exclude": ["node_modules"]
+}

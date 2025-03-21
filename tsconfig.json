@@ -8,21 +8,21 @@
     "rootDir": "./src",
 
     /* Emit */
-
     "outDir": "./dist",
 
     /* Interop Constraints */
-
+    "typeRoots": ["./src/types", "./node_modules/@types"],
+    "types": ["node", "express"], // ✅ 추가: Express 타입 강제 로드
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
 
     /* Type Checking */
     "strict": true,
 
     /* Completeness */
-
     "skipLibCheck": true
   },
-  "include": ["src", "tsconfig.json"],
+  "include": ["src/**/*", "types/**/*.d.ts"], // ✅ types 폴더 포함
   "exclude": ["node_modules"]
 }

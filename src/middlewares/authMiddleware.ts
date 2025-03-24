@@ -6,7 +6,7 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// ✅ JWT 인증 미들웨어
+// JWT 인증 미들웨어
 export const protect = async (
   req: AuthRequest,
   res: Response,

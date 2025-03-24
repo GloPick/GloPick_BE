@@ -4,6 +4,7 @@ dotenv.config();
 import cors from "cors";
 import { connectDB } from "./db";
 import authRoutes from "./routes/authRoutes";
+import { setupSwagger } from "./docs/swagger";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,7 +15,7 @@ app.use(express.json());
 connectDB();
 
 app.use("/api/auth", authRoutes);
-
+setupSwagger(app);
 app.get("/", (req, res) => {
   res.send("서버 실행 중");
 });

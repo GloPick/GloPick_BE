@@ -7,7 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 const router = express.Router();
 
-// ✅ 회원가입 API
+// 회원가입 API
 router.post(
   "/register",
   asyncHandler(async (req, res) => {
@@ -29,7 +29,7 @@ router.post(
   })
 );
 
-// ✅ 로그인 API
+// 로그인 API
 router.post(
   "/login",
   asyncHandler(async (req, res) => {
@@ -54,7 +54,7 @@ router.post(
   })
 );
 
-// ✅ 인증된 사용자 정보 조회
+// 인증된 사용자 정보 조회
 router.get(
   "/me",
   protect,

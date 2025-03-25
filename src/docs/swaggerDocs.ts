@@ -1,5 +1,6 @@
 export const authSwaggerDocs = {
   paths: {
+    // Auth
     "/api/auth/register": {
       post: {
         summary: "회원가입 API",
@@ -15,8 +16,9 @@ export const authSwaggerDocs = {
                   name: { type: "string", example: "user1" },
                   email: { type: "string", example: "user1@1111" },
                   password: { type: "string", example: "1111" },
-                  birth: { type: "string", example: "1999-01-01" },
-                  phone: { type: "string", example: "010-1234-5678" },
+                  passwordConfirm: { type: "string", example: "1111" },
+                  birth: { type: "string", example: "2001-01-01" },
+                  phone: { type: "string", example: "010-1111-1111" },
                 },
               },
             },
@@ -182,6 +184,157 @@ export const authSwaggerDocs = {
           "401": { description: "인증 실패" },
           "404": { description: "사용자 없음" },
           "500": { description: "서버 오류" },
+        },
+      },
+    },
+    //Profile
+    "/api/profile": {
+      post: {
+        summary: "사용자 이력 등록",
+        tags: ["Profile"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  education: { type: "string", example: "컴퓨터공학 학사" },
+                  experience: { type: "string", example: "개발 3년" },
+                  skills: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["React", "AWS", "정보처리기사"],
+                  },
+                  languages: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["영어", "한국어"],
+                  },
+                  desiredSalary: { type: "number", example: 5000 },
+                  desiredJob: {
+                    type: "string",
+                    example: "프론트엔드 개발자",
+                  },
+                  additionalNotes: {
+                    type: "string",
+                    example: "원격 근무 원함",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "이력 등록 성공" },
+          401: { description: "인증 실패" },
+        },
+      },
+      get: {
+        summary: "사용자 이력 조회",
+        tags: ["Profile"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "이력 리스트 반환",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      education: { type: "string" },
+                      experience: { type: "string" },
+                      skills: { type: "array", items: { type: "string" } },
+                      languages: { type: "array", items: { type: "string" } },
+                      desiredSalary: { type: "number" },
+                      desiredJob: { type: "string" },
+                      additionalNotes: { type: "string" },
+                      user: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          email: { type: "string" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "인증 실패" },
+        },
+      },
+    },
+    "/api/profile/{id}": {
+      put: {
+        summary: "사용자 이력 수정",
+        tags: ["Profile"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "이력 ID",
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  education: { type: "string" },
+                  experience: { type: "string" },
+                  skills: { type: "array", items: { type: "string" } },
+                  languages: { type: "array", items: { type: "string" } },
+                  desiredSalary: { type: "number" },
+                  desiredJob: { type: "string" },
+                  additionalNotes: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "수정 성공" },
+          404: { description: "이력 없음" },
+        },
+      },
+      delete: {
+        summary: "사용자 이력 삭제",
+        tags: ["Profile"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "이력 ID",
+          },
+        ],
+        responses: {
+          200: {
+            description: "삭제 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string", example: "이력 삭제 완료" },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "이력 없음" },
         },
       },
     },

@@ -1,25 +1,16 @@
-import express from "express";
+// src/server.ts
 import dotenv from "dotenv";
 dotenv.config();
-import cors from "cors";
-import { connectDB } from "./db";
-import authRoutes from "./routes/authRoutes";
-import { setupSwagger } from "./docs/swagger";
 
-const app = express();
+import { connectDB } from "./db";
+import app from "./app";
+
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
-
+// DB 연결
 connectDB();
 
-app.use("/api/auth", authRoutes);
-setupSwagger(app);
-app.get("/", (req, res) => {
-  res.send("서버 실행 중");
-});
-
+// 서버 실행
 app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중`);
+  console.log(`🚀 서버가 http://localhost:${PORT} 에서 실행 중`);
 });

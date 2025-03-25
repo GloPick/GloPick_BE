@@ -7,6 +7,8 @@ export interface UserDocument extends mongoose.Document {
   name: string;
   email: string;
   password: string;
+  birth?: string;
+  phone?: string;
   createdAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
@@ -15,6 +17,8 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  birth: { type: String }, //(ex: "2001-03-19")
+  phone: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

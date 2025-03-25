@@ -68,7 +68,7 @@ export const authSwaggerDocs = {
     "/api/auth/me": {
       get: {
         summary: "사용자 정보 조회 API",
-        description: "로그인된 사용자의 정보를 반환(토큰 필요)",
+        description: "로그인된 사용자의 정보를 반환 (토큰 필요)",
         tags: ["Auth"],
         security: [
           {
@@ -100,6 +100,82 @@ export const authSwaggerDocs = {
           "500": {
             description: "서버 오류",
           },
+        },
+      },
+      put: {
+        summary: "사용자 정보 수정 API",
+        description: "사용자의 이름, 이메일, 비밀번호를 수정",
+        tags: ["Auth"],
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string", example: "newname" },
+                  email: { type: "string", example: "newemail@example.com" },
+                  password: { type: "string", example: "newpassword123" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "사용자 정보 수정 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    _id: { type: "string", example: "abc123" },
+                    name: { type: "string", example: "newname" },
+                    email: { type: "string", example: "newemail@example.com" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "인증 실패" },
+          "404": { description: "사용자 없음" },
+          "500": { description: "서버 오류" },
+        },
+      },
+      delete: {
+        summary: "회원 탈퇴 API",
+        description: "현재 로그인된 사용자를 삭제",
+        tags: ["Auth"],
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        responses: {
+          "200": {
+            description: "회원 탈퇴 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "회원 탈퇴 완료",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "인증 실패" },
+          "404": { description: "사용자 없음" },
+          "500": { description: "서버 오류" },
         },
       },
     },

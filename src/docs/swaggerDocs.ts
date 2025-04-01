@@ -245,18 +245,32 @@ export const authSwaggerDocs = {
                   items: {
                     type: "object",
                     properties: {
-                      education: { type: "string" },
-                      experience: { type: "string" },
-                      skills: { type: "array", items: { type: "string" } },
-                      languages: { type: "array", items: { type: "string" } },
-                      desiredSalary: { type: "number" },
-                      desiredJob: { type: "string" },
-                      additionalNotes: { type: "string" },
+                      education: { type: "string", example: "컴퓨터공학 학사" },
+                      experience: {
+                        type: "string",
+                        example: "백엔드 개발 3년",
+                      },
+                      skills: {
+                        type: "array",
+                        items: { type: "string" },
+                        example: ["Node.js", "MongoDB", "정보처리기사"],
+                      },
+                      languages: {
+                        type: "array",
+                        items: { type: "string" },
+                        example: ["영어", "한국어"],
+                      },
+                      desiredSalary: { type: "number", example: 5000 },
+                      desiredJob: { type: "string", example: "백엔드 개발자" },
+                      additionalNotes: {
+                        type: "string",
+                        example: "정규직 희망, 재택 근무 가능",
+                      },
                       user: {
                         type: "object",
                         properties: {
-                          name: { type: "string" },
-                          email: { type: "string" },
+                          name: { type: "string", example: "user1" },
+                          email: { type: "string", example: "user1@1111" },
                         },
                       },
                     },
@@ -290,13 +304,24 @@ export const authSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  education: { type: "string" },
-                  experience: { type: "string" },
-                  skills: { type: "array", items: { type: "string" } },
-                  languages: { type: "array", items: { type: "string" } },
-                  desiredSalary: { type: "number" },
-                  desiredJob: { type: "string" },
-                  additionalNotes: { type: "string" },
+                  education: { type: "string", example: "컴퓨터공학 학사" },
+                  experience: { type: "string", example: "백엔드 개발 3년" },
+                  skills: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["Node.js", "MongoDB", "정보처리기사"],
+                  },
+                  languages: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["일본어", "한국어"],
+                  },
+                  desiredSalary: { type: "number", example: 5000 },
+                  desiredJob: { type: "string", example: "백엔드 개발자" },
+                  additionalNotes: {
+                    type: "string",
+                    example: "정규직 희망, 재택 근무 가능",
+                  },
                 },
               },
             },

@@ -8,6 +8,10 @@ import {
   updateProfile,
   deleteProfile,
 } from "../controllers/profileController";
+import {
+  handleUserProfile,
+  generateGPTResponse,
+} from "../controllers/profileController";
 
 const router = express.Router();
 
@@ -20,4 +24,9 @@ router.get("/", protect, asyncHandler(getProfile));
 router.put("/:id", protect, asyncHandler(updateProfile));
 // 사용자 이력 삭제 (DELETE /api/profile/:id)
 router.delete("/:id", protect, asyncHandler(deleteProfile));
+// 이력 등록
+router.post("/", protect, asyncHandler(handleUserProfile));
+
+// GPT 응답 생성
+router.get("/:id/gpt", protect, asyncHandler(generateGPTResponse));
 export default router;

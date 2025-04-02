@@ -40,11 +40,41 @@ export const getGPTResponse = async (profile: any) => {
       {
         model: "gpt-4", // GPT-4 모델 사용
         messages: [
-          { role: "system", content: "You are a helpful assistant." },
-          { role: "user", content: prompt },
+          {
+            role: "system",
+            content: `당신은 경력 기반으로 대한민국을 제외한 해외의 직업을 추천해주는 도우미입니다. 
+        사용자의 정보를 바탕으로 아래 JSON 형식 그대로만 응답하세요:
+
+{
+  "rankings": [
+    {
+      "country": "국가명",
+      "job": "추천 직업",
+      "reason": "간단한 이유"
+    },
+    {
+      "country": "국가명",
+      "job": "추천 직업",
+      "reason": "간단한 이유"
+    },
+    {
+      "country": "국가명",
+      "job": "추천 직업",
+      "reason": "간단한 이유"
+    }
+  ]
+}
+
+⚠️ 위 JSON 형식 외에는 절대 아무것도 출력하지 마세요.`,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
         ],
-        max_tokens: 100,
-        temperature: 0.7,
+
+        max_tokens: 500,
+        temperature: 0,
       },
       {
         headers: {
@@ -54,7 +84,17 @@ export const getGPTResponse = async (profile: any) => {
       }
     );
 
-    return response.data; // GPT 응답 반환
+    const gptRaw = response.data?.choices?.[0]?.message?.content;
+    let gptParsed;
+
+    try {
+      gptParsed = JSON.parse(gptRaw);
+    } catch (err) {
+      console.error("GPT 응답 JSON 파싱 실패:", err);
+      throw new Error("잘못된 형식의 GPT 응답입니다.");
+    }
+
+    return gptParsed;
   } catch (error) {
     console.error("Error calling GPT API:", error);
     throw error;

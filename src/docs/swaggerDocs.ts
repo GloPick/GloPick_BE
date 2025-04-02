@@ -1,6 +1,6 @@
+// Auth
 export const authSwaggerDocs = {
   paths: {
-    // Auth
     "/api/auth/register": {
       post: {
         summary: "회원가입 API",
@@ -27,6 +27,22 @@ export const authSwaggerDocs = {
         responses: {
           "201": {
             description: "회원가입 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    _id: {
+                      type: "string",
+                      example: "60c72b2f9b1d8c001c8a4b53",
+                    },
+                    name: { type: "string", example: "user1" },
+                    email: { type: "string", example: "user1@1111" },
+                    token: { type: "string", example: "token" },
+                  },
+                },
+              },
+            },
           },
           "400": {
             description: "이미 존재하는 사용자",
@@ -187,7 +203,12 @@ export const authSwaggerDocs = {
         },
       },
     },
-    //Profile
+  },
+};
+
+//Profile
+export const profileSwaggerDocs = {
+  path: {
     "/api/profile": {
       post: {
         summary: "사용자 이력 등록",
@@ -360,6 +381,90 @@ export const authSwaggerDocs = {
             },
           },
           404: { description: "이력 없음" },
+        },
+      },
+    },
+    "/api/profile/{id}/gpt": {
+      get: {
+        summary: "사용자 이력을 기반으로 GPT 응답 생성",
+        description:
+          "사용자의 이력 정보(학력, 경험, 기술 스택 등)를 GPT API로 전송하고 응답을 받습니다.",
+        tags: ["Profile"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "사용자 이력 ID",
+          },
+        ],
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        responses: {
+          200: {
+            description: "GPT 응답 생성 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    rankings: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          country: { type: "string", example: "캐나다" },
+                          job: { type: "string", example: "프론트엔드 개발자" },
+                          reason: {
+                            type: "string",
+                            example:
+                              "React와 AWS에 대한 경험이 북미 시장에서 높은 수요를 보입니다.",
+                          },
+                        },
+                      },
+                    },
+                  },
+                  example: {
+                    rankings: [
+                      {
+                        country: "미국",
+                        job: "프론트엔드 개발자",
+                        reason:
+                          "프론트엔드 개발에 대한 수요가 높고, 연봉이 높음",
+                      },
+                      {
+                        country: "캐나다",
+                        job: "프론트엔드 개발자",
+                        reason: "IT 산업이 발달하며 원격 근무 기회가 많음",
+                      },
+                      {
+                        country: "호주",
+                        job: "프론트엔드 개발자",
+                        reason: "영어권 국가로서 원격 근무 가능한 기업이 많음",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+
+          400: {
+            description: "잘못된 요청",
+          },
+          401: {
+            description: "인증 실패",
+          },
+          404: {
+            description: "사용자 이력 없음",
+          },
+          500: {
+            description: "서버 오류",
+          },
         },
       },
     },

@@ -54,12 +54,7 @@ export const login = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "비밀번호가 틀렸습니다." });
   }
 
-  res.json({
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    token: generateToken(user._id.toString()),
-  });
+  res.status(201).send("로그인 성공!");
 };
 
 // 사용자 정보 조회

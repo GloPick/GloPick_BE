@@ -4,7 +4,7 @@ import { AuthRequest } from "../middlewares/authMiddleware";
 import { getGPTResponse } from "../services/gptService";
 import { Types } from "mongoose";
 
-// 사용자 이력 입력 (POST /api/profile)
+// 사용자 이력 등록 (POST /api/profile)
 export const createProfile = async (req: AuthRequest, res: Response) => {
   const {
     education,
@@ -15,6 +15,33 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     desiredJob,
     additionalNotes,
   } = req.body;
+
+  // 이전 이력과 동일한 내용이면 등록 불가
+  const normalize = (value: string) => value?.trim().toLowerCase() || "";
+
+  const normalizeArray = (arr: string[]) =>
+    (arr || []).map(normalize).sort().join(",");
+
+  const existingProfiles = await UserProfile.find({ user: req.user!._id });
+
+  const isDuplicate = existingProfiles.some((profile) => {
+    return (
+      normalize(profile.education) === normalize(education) &&
+      normalize(profile.experience) === normalize(experience) &&
+      normalizeArray(profile.skills) === normalizeArray(skills) &&
+      normalizeArray(profile.languages) === normalizeArray(languages) &&
+      profile.desiredSalary === desiredSalary &&
+      normalize(profile.desiredJob || "") === normalize(desiredJob) &&
+      normalize(profile.additionalNotes || "") ===
+        normalize(additionalNotes || "")
+    );
+  });
+
+  if (isDuplicate) {
+    return res
+      .status(400)
+      .json({ message: "이전 이력과 내용이 동일합니다. 등록이 불가합니다." });
+  }
 
   const profile = await UserProfile.create({
     user: req.user!._id,
@@ -27,7 +54,7 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     additionalNotes,
   });
 
-  res.status(201).json(profile);
+  res.status(201).send("이력이 정상적으로 등록되었습니다.");
 };
 // 사용자 이력 조회 (GET /api/profile)
 export const getProfile = async (req: AuthRequest, res: Response) => {

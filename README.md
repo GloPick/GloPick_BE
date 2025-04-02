@@ -69,7 +69,7 @@ Type: Subject (#이슈번호)
 ## 💬 리뷰 요구사항
 
 ## 📎 기타 참고 사항
-  - 관련 API 문서: [링크]
+  - 관련 API 문서: http://localhost:5001/api-docs/
 
 ```
 

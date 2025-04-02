@@ -28,12 +28,7 @@ export const register = async (req: Request, res: Response) => {
     });
     await newUser.save();
 
-    res.status(201).json({
-      _id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      token: generateToken(newUser._id.toString()),
-    });
+    res.status(201).send("회원가입 성공!");
   } catch (error) {
     console.error("회원가입 오류:", error);
     res.status(500).json({ message: "서버 오류" });
@@ -53,7 +48,8 @@ export const login = async (req: Request, res: Response) => {
   if (!isMatch) {
     return res.status(401).json({ message: "비밀번호가 틀렸습니다." });
   }
-
+  const token = generateToken(user._id.toString());
+  console.log(`토큰 : ${token}`);
   res.status(201).send("로그인 성공!");
 };
 

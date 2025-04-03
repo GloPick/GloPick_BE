@@ -38,9 +38,11 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   });
 
   if (isDuplicate) {
-    return res
-      .status(400)
-      .json({ message: "이전 이력과 내용이 동일합니다. 등록이 불가합니다." });
+    return res.status(400).json({
+      code: 400,
+      message: "이전 이력과 내용이 동일합니다. 등록이 불가합니다.",
+      data: null,
+    });
   }
 
   const profile = await UserProfile.create({
@@ -54,7 +56,11 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     additionalNotes,
   });
 
-  res.status(201).send("이력이 정상적으로 등록되었습니다.");
+  res.status(201).json({
+    code: 201,
+    message: "이력이 정상적으로 등록되었습니다.",
+    data: null,
+  });
 };
 // 사용자 이력 조회 (GET /api/profile)
 export const getProfile = async (req: AuthRequest, res: Response) => {
@@ -64,10 +70,16 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   );
 
   if (!profiles) {
-    return res.status(404).json({ message: "이력 정보가 없습니다." });
+    return res
+      .status(404)
+      .json({ code: 404, message: "이력 정보가 없습니다.", data: null });
   }
 
-  res.json(profiles);
+  res.status(200).json({
+    code: 200,
+    message: "이력 정보 조회 성공",
+    data: profiles,
+  });
 };
 // 사용자 이력 수정 (PUT /api/profile/:id)
 export const updateProfile = async (req: AuthRequest, res: Response) => {
@@ -77,7 +89,9 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   });
 
   if (!profile) {
-    return res.status(404).json({ message: "이력 정보를 찾을 수 없습니다." });
+    return res
+      .status(404)
+      .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
   }
 
   const fields = [
@@ -95,7 +109,11 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   });
 
   await profile.save();
-  res.json(profile);
+  res.status(200).json({
+    code: 200,
+    message: "이력 정보 수정 성공",
+    data: profile,
+  });
 };
 // 사용자 이력 삭제 (DELETE /api/profile/:id)
 export const deleteProfile = async (req: AuthRequest, res: Response) => {
@@ -105,10 +123,16 @@ export const deleteProfile = async (req: AuthRequest, res: Response) => {
   });
 
   if (!profile) {
-    return res.status(404).json({ message: "이력 정보를 찾을 수 없습니다." });
+    return res
+      .status(404)
+      .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
   }
 
-  res.json({ message: "이력 삭제 완료" });
+  res.status(200).json({
+    code: 200,
+    message: "이력 삭제 완료",
+    data: null,
+  });
 };
 
 // 사용자 이력 정보와 GPT 요청을 처리하는 함수
@@ -127,6 +151,7 @@ export const handleUserProfile = async (req: Request, res: Response) => {
     const gptResponse = await getGPTResponse(profile);
 
     res.status(201).json({
+      code: 201,
       message: "이력 등록 및 GPT 응답 생성 성공",
       data: {
         profile,
@@ -134,7 +159,7 @@ export const handleUserProfile = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "이력 등록 실패", error });
+    res.status(500).json({ code: 500, message: "이력 등록 실패", data: null });
   }
 };
 
@@ -153,18 +178,23 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     });
 
     if (!profile) {
-      return res.status(404).json({ message: "이력을 찾을 수 없습니다." });
+      return res
+        .status(404)
+        .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
     }
 
     // GPT 응답 생성
     const gptResponse = await getGPTResponse(profile);
 
-    res.json({
+    res.status(200).json({
+      code: 200,
       message: "GPT 응답 생성 성공",
       data: gptResponse,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "GPT 응답 생성 실패", error });
+    res
+      .status(500)
+      .json({ code: 500, message: "GPT 응답 생성 실패", data: null });
   }
 };

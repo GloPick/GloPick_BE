@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import UserProfile from "../models/UserProfile";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import { getGPTResponse } from "../services/gptService";
+import GptRecommendation from "../models/GPTRecommendation";
 import { Types } from "mongoose";
 
 // 사용자 이력 등록 (POST /api/profile)
@@ -150,6 +151,12 @@ export const handleUserProfile = async (req: Request, res: Response) => {
     // 이력 정보와 함께 GPT 응답 생성
     const gptResponse = await getGPTResponse(profile);
 
+    await GptRecommendation.create({
+      user: req.user!._id,
+      profile: profile._id,
+      rankings: gptResponse.rankings,
+    });
+
     res.status(201).json({
       code: 201,
       message: "이력 등록 및 GPT 응답 생성 성공",
@@ -186,6 +193,12 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     // GPT 응답 생성
     const gptResponse = await getGPTResponse(profile);
 
+    await GptRecommendation.create({
+      user: req.user!._id,
+      profile: profile._id,
+      rankings: gptResponse.rankings,
+    });
+
     res.status(200).json({
       code: 200,
       message: "GPT 응답 생성 성공",
@@ -196,5 +209,24 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ code: 500, message: "GPT 응답 생성 실패", data: null });
+  }
+};
+// GPT 추천 결과 조회 API
+export const getGptRecommendations = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const results = await GptRecommendation.find({ user: req.user!._id })
+      .populate("profile", "-__v")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      code: 200,
+      message: "추천 결과 조회 성공",
+      data: results,
+    });
+  } catch (error) {
+    res.status(500).json({ code: 500, message: "조회 실패", data: null });
   }
 };

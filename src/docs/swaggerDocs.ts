@@ -468,5 +468,84 @@ export const profileSwaggerDocs = {
         },
       },
     },
+    "/api/profile/recommendations": {
+      get: {
+        summary: "GPT 추천 결과 목록 조회",
+        description: "사용자가 저장한 GPT 추천 결과 리스트 반환",
+        tags: ["Profile"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "추천 결과 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      _id: {
+                        type: "string",
+                        example: "660f62c89abf1b001c66e678",
+                      },
+                      profile: {
+                        type: "object",
+                        properties: {
+                          education: {
+                            type: "string",
+                            example: "컴퓨터공학 학사",
+                          },
+                          experience: { type: "string", example: "3년 경력" },
+                          skills: {
+                            type: "array",
+                            items: { type: "string" },
+                            example: ["Node.js", "TypeScript"],
+                          },
+                          languages: {
+                            type: "array",
+                            items: { type: "string" },
+                            example: ["영어", "일본어"],
+                          },
+                          desiredSalary: { type: "number", example: 5000 },
+                          desiredJob: {
+                            type: "string",
+                            example: "풀스택 개발자",
+                          },
+                          additionalNotes: {
+                            type: "string",
+                            example: "원격 근무 희망",
+                          },
+                        },
+                      },
+                      rankings: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            country: { type: "string", example: "미국" },
+                            job: { type: "string", example: "백엔드 개발자" },
+                            reason: {
+                              type: "string",
+                              example: "Node.js 경험이 풍부하여 적합",
+                            },
+                          },
+                        },
+                      },
+                      createdAt: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2025-04-04T05:34:21.201Z",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "인증 실패 (토큰 없음 또는 유효하지 않음)" },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
   },
 };

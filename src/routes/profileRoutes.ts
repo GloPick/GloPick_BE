@@ -16,7 +16,7 @@ import { getGptRecommendations } from "../controllers/profileController";
 
 const router = express.Router();
 
-// 사용자 이력 입력 (POST /api/profile)
+// 사용자 이력 등록 (POST /api/profile)
 router.post("/", protect, asyncHandler(createProfile));
 
 // 사용자 이력 조회 (GET /api/profile)
@@ -28,8 +28,8 @@ router.delete("/:id", protect, asyncHandler(deleteProfile));
 // 이력 등록
 router.post("/", protect, asyncHandler(handleUserProfile));
 
-// GPT 응답 생성
-router.get("/:id/gpt", protect, asyncHandler(generateGPTResponse));
+// GPT 추천 생성
+router.post("/:id/gpt", protect, asyncHandler(generateGPTResponse));
 // GPT 추천 결과 조회
 router.get("/recommendations", protect, asyncHandler(getGptRecommendations));
 export default router;

@@ -189,8 +189,21 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
         .status(404)
         .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
     }
+    // 이미 추천받은 이력인지 확인
+    const existingRecommendation = await GptRecommendation.findOne({
+      user: req.user!._id,
+      profile: profile._id,
+    });
 
-    // GPT 응답 생성
+    if (existingRecommendation) {
+      return res.status(400).json({
+        code: 400,
+        message: "이미 추천받은 이력입니다.",
+        data: null,
+      });
+    }
+
+    // GPT 호출 및 추천 결과 저장
     const gptResponse = await getGPTResponse(profile);
 
     await GptRecommendation.create({
@@ -220,6 +233,14 @@ export const getGptRecommendations = async (
     const results = await GptRecommendation.find({ user: req.user!._id })
       .populate("profile", "-__v")
       .sort({ createdAt: -1 });
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({
+        code: 404,
+        message: "저장된 추천 결과가 없습니다.",
+        data: null,
+      });
+    }
 
     res.status(200).json({
       code: 200,

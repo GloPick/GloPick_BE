@@ -385,7 +385,7 @@ export const profileSwaggerDocs = {
       },
     },
     "/api/profile/{id}/gpt": {
-      get: {
+      post: {
         summary: "사용자 이력을 기반으로 GPT 응답 생성",
         description:
           "사용자의 이력 정보(학력, 경험, 기술 스택 등)를 GPT API로 전송하고 응답을 받습니다.",
@@ -454,7 +454,7 @@ export const profileSwaggerDocs = {
           },
 
           400: {
-            description: "잘못된 요청",
+            description: "이미 추천된 이력입니다.",
           },
           401: {
             description: "인증 실패",
@@ -463,7 +463,7 @@ export const profileSwaggerDocs = {
             description: "사용자 이력 없음",
           },
           500: {
-            description: "서버 오류",
+            description: "GPT 호출 실패",
           },
         },
       },
@@ -493,27 +493,34 @@ export const profileSwaggerDocs = {
                         properties: {
                           education: {
                             type: "string",
-                            example: "컴퓨터공학 학사",
+                            example: "대학교 응용수학과 학사",
                           },
-                          experience: { type: "string", example: "3년 경력" },
+                          experience: {
+                            type: "string",
+                            example: "학원 수학 선생님 아르바이트 3년",
+                          },
                           skills: {
                             type: "array",
                             items: { type: "string" },
-                            example: ["Node.js", "TypeScript"],
+                            example: [
+                              "초,중,고등 수학 지도 가능",
+                              "토익 800점 이상",
+                              "학점 4.0이상",
+                            ],
                           },
                           languages: {
                             type: "array",
                             items: { type: "string" },
-                            example: ["영어", "일본어"],
+                            example: ["한국어", "일본어"],
                           },
                           desiredSalary: { type: "number", example: 5000 },
                           desiredJob: {
                             type: "string",
-                            example: "풀스택 개발자",
+                            example: "없음",
                           },
                           additionalNotes: {
                             type: "string",
-                            example: "원격 근무 희망",
+                            example: "아시아 국가 희망",
                           },
                         },
                       },
@@ -522,15 +529,33 @@ export const profileSwaggerDocs = {
                         items: {
                           type: "object",
                           properties: {
-                            country: { type: "string", example: "미국" },
-                            job: { type: "string", example: "백엔드 개발자" },
-                            reason: {
-                              type: "string",
-                              example: "Node.js 경험이 풍부하여 적합",
-                            },
+                            country: { type: "string" },
+                            job: { type: "string" },
+                            reason: { type: "string" },
                           },
                         },
+                        example: [
+                          {
+                            country: "일본",
+                            job: "수학 교사",
+                            reason:
+                              "일본어 구사 가능하며, 학원에서의 수학 지도 경험이 있음",
+                          },
+                          {
+                            country: "싱가포르",
+                            job: "수학 튜터",
+                            reason:
+                              "싱가포르는 교육열이 높아 수학 튜터에 대한 수요가 많음",
+                          },
+                          {
+                            country: "중국",
+                            job: "국제학교 수학 선생님",
+                            reason:
+                              "중국의 국제학교에서는 외국인 선생님을 선호하며, 토익 점수와 학점이 높아 유리함",
+                          },
+                        ],
                       },
+
                       createdAt: {
                         type: "string",
                         format: "date-time",
@@ -543,6 +568,7 @@ export const profileSwaggerDocs = {
             },
           },
           401: { description: "인증 실패 (토큰 없음 또는 유효하지 않음)" },
+          404: { description: "저장된 추천 결과가 없습니다." },
           500: { description: "서버 오류" },
         },
       },

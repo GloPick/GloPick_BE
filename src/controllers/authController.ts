@@ -66,7 +66,15 @@ export const login = async (req: Request, res: Response) => {
   }
   const token = generateToken(user._id.toString());
   console.log(`토큰 : ${token}`);
-  res.status(201).json({ code: 201, message: "로그인 성공!", data: null });
+  res.status(201).json({
+    code: 201,
+    message: "로그인 성공!",
+    data: {
+      name: user.name,
+      email: user.email,
+      token,
+    },
+  });
 };
 
 // 사용자 정보 조회

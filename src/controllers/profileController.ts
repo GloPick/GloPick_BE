@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import UserProfile from "../models/UserProfile";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import { getGPTResponse } from "../services/gptService";
-import GptRecommendation from "../models/GPTRecommendation";
+import GptRecommendation from "../models/gptRecommendation";
 import { Types } from "mongoose";
 
 // 사용자 이력 등록 (POST /api/profile)

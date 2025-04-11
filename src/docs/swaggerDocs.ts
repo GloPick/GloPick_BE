@@ -575,3 +575,186 @@ export const profileSwaggerDocs = {
     },
   },
 };
+
+// Simulation
+export const simulationSwaggerDocs = {
+  paths: {
+    "/api/simulation/input": {
+      post: {
+        summary: "시뮬레이션 입력 정보 저장",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  recommendationId: {
+                    type: "string",
+                    example: "662fabc123456abc123456aa",
+                  },
+                  selectedRankIndex: { type: "integer", example: 0 },
+                  profileId: {
+                    type: "string",
+                    example: "6631abc123456abc123456ab",
+                  },
+                  budget: { type: "number", example: 3000 },
+                  duration: { type: "string", example: "1년" },
+                  languageLevel: {
+                    type: "string",
+                    enum: ["능숙", "기초", "통역 필요"],
+                    example: "기초",
+                  },
+                  hasLicense: { type: "boolean", example: true },
+                  jobTypes: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["원격 근무"],
+                  },
+                  requiredFacilities: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["병원", "대중교통"],
+                  },
+                  accompanyingFamily: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["배우자"],
+                  },
+                  visaStatus: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["취업 비자"],
+                  },
+                  additionalNotes: {
+                    type: "string",
+                    example: "추운 나라 희망",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: "시뮬레이션 입력 정보 저장 성공" },
+          400: { description: "추천 결과 없음" },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
+    "/api/simulation/{id}/cities": {
+      post: {
+        summary: "GPT 기반 도시 3개 추천",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "SimulationInput ID",
+          },
+        ],
+        responses: {
+          200: {
+            description: "도시 추천 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      name: { type: "string", example: "밴쿠버" },
+                      summary: {
+                        type: "string",
+                        example: "기후 온화하고 교통 좋음",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "입력 정보 없음" },
+          500: { description: "GPT 호출 실패" },
+        },
+      },
+    },
+    "/api/simulation/{id}/gpt/save": {
+      post: {
+        summary: "선택한 도시 기반 시뮬레이션 생성 및 저장",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "SimulationInput ID",
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  selectedCity: { type: "string", example: "밴쿠버" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: "시뮬레이션 생성 및 저장 완료",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    country: { type: "string", example: "캐나다" },
+                    result: {
+                      type: "object",
+                      properties: {
+                        recommendedCity: { type: "string", example: "밴쿠버" },
+                        estimatedMonthlyCost: {
+                          type: "object",
+                          properties: {
+                            housing: { type: "string", example: "180" },
+                            food: { type: "string", example: "30" },
+                            transportation: { type: "string", example: "10" },
+                            etc: { type: "string", example: "50" },
+                            total: { type: "string", example: "270" },
+                          },
+                        },
+                        jobOpportunity: {
+                          type: "string",
+                          example: "원격 근무 가능 직종 많음",
+                        },
+                        culturalTips: {
+                          type: "string",
+                          example: "다문화 친화적이며 영어 사용 환경",
+                        },
+                        warnings: { type: "string", example: "비자 준비 필요" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "도시 선택 안 됨" },
+          404: { description: "입력 정보 없음" },
+          500: { description: "GPT 호출 또는 저장 실패" },
+        },
+      },
+    },
+  },
+};

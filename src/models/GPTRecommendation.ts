@@ -19,4 +19,4 @@ const GptRecommendationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("GptRecommendation", GptRecommendationSchema);
+export default mongoose.model("gptRecommendation", GptRecommendationSchema);

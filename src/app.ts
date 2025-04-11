@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import profileRoutes from "./routes/profileRoutes";
+import simulationRoutes from "./routes/simulationRoutes";
 import { setupSwagger } from "./docs/swagger";
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 // 라우터 등록
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/simulation", simulationRoutes);
 
 // Swagger 문서
 setupSwagger(app);

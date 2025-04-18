@@ -106,7 +106,7 @@ export const simulationSwaggerDocs = {
         },
       },
     },
-    "/api/simulation/{id}/gpt/save": {
+    "/api/simulation/{id}/gpt": {
       post: {
         summary: "선택한 도시 기반 시뮬레이션 생성 및 저장",
         tags: ["Simulation"],
@@ -141,30 +141,89 @@ export const simulationSwaggerDocs = {
                 schema: {
                   type: "object",
                   properties: {
-                    country: { type: "string", example: "캐나다" },
-                    result: {
+                    code: {
+                      type: "integer",
+                      example: 201,
+                    },
+                    message: {
+                      type: "string",
+                      example: "시뮬레이션 생성 및 저장 완료",
+                    },
+                    data: {
                       type: "object",
                       properties: {
-                        recommendedCity: { type: "string", example: "밴쿠버" },
-                        estimatedMonthlyCost: {
+                        simulationResult: {
                           type: "object",
                           properties: {
-                            housing: { type: "string", example: "180" },
-                            food: { type: "string", example: "30" },
-                            transportation: { type: "string", example: "10" },
-                            etc: { type: "string", example: "50" },
-                            total: { type: "string", example: "270" },
+                            country: { type: "string", example: "캐나다" },
+                            result: {
+                              type: "object",
+                              properties: {
+                                recommendedCity: {
+                                  type: "string",
+                                  example: "밴프",
+                                },
+                                nearestAirport: {
+                                  type: "object",
+                                  properties: {
+                                    name: {
+                                      type: "string",
+                                      example: "Calgary International Airport",
+                                    },
+                                    city: {
+                                      type: "string",
+                                      example: "Calgary",
+                                    },
+                                    code: {
+                                      type: "string",
+                                      example: "YYC",
+                                    },
+                                  },
+                                },
+                                estimatedMonthlyCost: {
+                                  type: "object",
+                                  properties: {
+                                    housing: { type: "string", example: "180" },
+                                    food: { type: "string", example: "30" },
+                                    transportation: {
+                                      type: "string",
+                                      example: "10",
+                                    },
+                                    etc: { type: "string", example: "50" },
+                                    total: { type: "string", example: "270" },
+                                  },
+                                },
+                                jobOpportunity: {
+                                  type: "string",
+                                  example: "원격 근무 가능 직종 많음",
+                                },
+                                culturalTips: {
+                                  type: "string",
+                                  example: "다문화 친화적이며 영어 사용 환경",
+                                },
+                                warnings: {
+                                  type: "string",
+                                  example: "비자 준비 필요",
+                                },
+                              },
+                            },
                           },
                         },
-                        jobOpportunity: {
-                          type: "string",
-                          example: "원격 근무 가능 직종 많음",
+                        flightLinks: {
+                          type: "object",
+                          properties: {
+                            googleFlights: {
+                              type: "string",
+                              example:
+                                "https://www.google.com/travel/flights?q=Flights from ICN to YYC/one way",
+                            },
+                            skyscanner: {
+                              type: "string",
+                              example:
+                                "https://www.skyscanner.co.kr/transport/flights/icn/yyc/",
+                            },
+                          },
                         },
-                        culturalTips: {
-                          type: "string",
-                          example: "다문화 친화적이며 영어 사용 환경",
-                        },
-                        warnings: { type: "string", example: "비자 준비 필요" },
                       },
                     },
                   },
@@ -175,6 +234,89 @@ export const simulationSwaggerDocs = {
           400: { description: "도시 선택 안 됨" },
           404: { description: "입력 정보 없음" },
           500: { description: "GPT 호출 또는 저장 실패" },
+        },
+      },
+    },
+
+    "/api/simulation/{id}/flight-links": {
+      get: {
+        summary: "항공권 링크 생성",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "SimulationInput ID",
+          },
+        ],
+        responses: {
+          200: {
+            description: "항공권 링크 생성 완료",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: {
+                      type: "integer",
+                      example: 200,
+                    },
+                    message: {
+                      type: "string",
+                      example: "항공권 링크 생성 완료",
+                    },
+                    data: {
+                      type: "object",
+                      properties: {
+                        simulation: {
+                          type: "object",
+                          properties: {
+                            _id: { type: "string", example: "6632abc123..." },
+                            departureAirport: {
+                              type: "string",
+                              example: "ICN",
+                            },
+                            selectedCity: {
+                              type: "string",
+                              example: "Vancouver",
+                            },
+                          },
+                        },
+
+                        flightLinks: {
+                          type: "object",
+                          properties: {
+                            googleFlights: {
+                              type: "string",
+                              example:
+                                "https://www.google.com/travel/flights?q=Flights from ICN to Vancouver/one way",
+                            },
+                            skyscanner: {
+                              type: "string",
+                              example:
+                                "https://www.skyscanner.co.kr/transport/flights/icn/vancouver/",
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "출발지 또는 도착지 정보 누락",
+          },
+          404: {
+            description: "시뮬레이션 정보 없음",
+          },
+          500: {
+            description: "서버 오류",
+          },
         },
       },
     },

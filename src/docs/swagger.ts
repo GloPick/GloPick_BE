@@ -1,11 +1,7 @@
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express } from "express";
-import {
-  authSwaggerDocs,
-  profileSwaggerDocs,
-  simulationSwaggerDocs,
-} from "../docs/swaggerDocs";
+import { swaggerDocs } from "./swaggerDocs";
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -30,12 +26,7 @@ const options: swaggerJSDoc.Options = {
         },
       },
     },
-
-    paths: {
-      ...authSwaggerDocs.paths,
-      ...profileSwaggerDocs.path,
-      ...simulationSwaggerDocs.paths,
-    },
+    paths: swaggerDocs.paths,
   },
   apis: [],
 };

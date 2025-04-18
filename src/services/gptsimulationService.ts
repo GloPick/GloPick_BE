@@ -117,6 +117,11 @@ export const generateSimulationResponse = async (input: any) => {
     "jobOpportunity": "추천 직종 및 취업 가능성 설명",
     "culturalTips": "문화, 언어, 생활 팁",
     "warnings": "주의해야 할 점 및 유의사항"
+      "nearestAirport": {
+      "name": "공항 전체 이름",
+      "city": "공항이 위치한 도시",
+      "code": "공항의 IATA 코드"
+    }
   }
 }
 

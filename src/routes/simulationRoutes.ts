@@ -6,6 +6,7 @@ import {
   generateAndSaveSimulation,
   recommendCities,
 } from "../controllers/simulationController";
+import { getSimulationFlightLinks } from "../controllers/simulationController";
 
 const router = express.Router();
 
@@ -18,6 +19,11 @@ router.post("/:id/gpt", protect, asyncHandler(generateAndSaveSimulation));
 // 도시 3개 추천
 router.post("/:id/cities", protect, asyncHandler(recommendCities));
 
-router.post("/:id/gpt/save", protect, asyncHandler(generateAndSaveSimulation));
+// 항공권 링크 포함 시뮬레이션 결과 조회
+router.get(
+  "/:id/flight-links",
+  protect,
+  asyncHandler(getSimulationFlightLinks)
+);
 
 export default router;

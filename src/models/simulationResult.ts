@@ -20,6 +20,11 @@ const simulationResultSchema = new mongoose.Schema({
     jobOpportunity: String, // 취업 가능성 및 추천 직종 설명
     culturalTips: String, // 문화, 언어, 생활 관련 팁
     warnings: String, // 유의사항 및 주의할 점
+    nearestAirport: {
+      name: String,
+      city: String,
+      code: String,
+    },
   },
 });
 

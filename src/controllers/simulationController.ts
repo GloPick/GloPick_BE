@@ -7,6 +7,7 @@ import {
   generateSimulationResponse,
   getCityRecommendations,
 } from "../services/gptsimulationService";
+import { createFlightLinks } from "../utils/flightLinkGenerator";
 
 // 사용자 입력 저장
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
@@ -23,6 +24,7 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       requiredFacilities,
       accompanyingFamily,
       visaStatus,
+      departureAirport,
       additionalNotes,
     } = req.body;
 
@@ -54,6 +56,7 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       requiredFacilities,
       accompanyingFamily,
       visaStatus,
+      departureAirport,
       additionalNotes,
     });
 
@@ -133,6 +136,12 @@ export const generateAndSaveSimulation = async (
     await input.save();
 
     const gptResult = await generateSimulationResponse(input);
+    const arrivalAirportCode = gptResult?.nearestAirport?.code || selectedCity;
+
+    const flightLinks = createFlightLinks(
+      input.departureAirport,
+      arrivalAirportCode
+    );
 
     const saved = await SimulationResult.create({
       user: req.user!._id,
@@ -144,13 +153,72 @@ export const generateAndSaveSimulation = async (
     res.status(201).json({
       code: 201,
       message: "시뮬레이션 생성 및 저장 완료",
-      data: saved,
+      data: {
+        simulationResult: saved,
+        flightLinks,
+      },
     });
   } catch (error) {
     console.error("시뮬레이션 생성 실패:", error);
     res.status(500).json({
       code: 500,
       message: "GPT 호출 또는 저장 실패",
+      data: null,
+    });
+  }
+};
+
+// 시뮬레이션 결과 + 항공권 링크 반환
+export const getSimulationFlightLinks = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    const simulation = await SimulationInput.findOne({
+      _id: id,
+      user: req.user!._id,
+    });
+
+    if (!simulation) {
+      return res.status(404).json({
+        code: 404,
+        message: "시뮬레이션 입력 정보를 찾을 수 없습니다.",
+        data: null,
+      });
+    }
+
+    if (!simulation.departureAirport || !simulation.selectedCity) {
+      return res.status(400).json({
+        code: 400,
+        message: "출발 공항 또는 선택 도시 정보가 없습니다.",
+        data: null,
+      });
+    }
+
+    const flightLinks = createFlightLinks(
+      simulation.departureAirport,
+      simulation.selectedCity
+    );
+
+    res.status(200).json({
+      code: 200,
+      message: "항공권 링크 생성 완료",
+      data: {
+        simulation: {
+          _id: simulation._id,
+          departureAirport: simulation.departureAirport,
+          selectedCity: simulation.selectedCity,
+        },
+        flightLinks,
+      },
+    });
+  } catch (error) {
+    console.error("항공권 링크 생성 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "서버 오류",
       data: null,
     });
   }

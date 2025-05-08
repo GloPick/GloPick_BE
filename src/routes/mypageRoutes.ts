@@ -1,16 +1,15 @@
-// src/routes/mypageRoutes.ts
-
 import express from "express";
 import {
   getUserInfo,
   updateUserInfo,
   deleteUser,
-} from "../controllers/authController";
+  getGptRecommendations,
+} from "../controllers/mypageController";
 import {
   getProfile,
   updateProfile,
   deleteProfile,
-} from "../controllers/profileController";
+} from "../controllers/mypageController";
 import { protect } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
 
@@ -33,4 +32,12 @@ router.get("/profiles", protect, asyncHandler(getProfile));
 router.put("/profiles/:id", protect, asyncHandler(updateProfile));
 // 사용자 이력 삭제 (DELETE /api/profile/:id)
 router.delete("/profiles/:id", protect, asyncHandler(deleteProfile));
+
+// GPT 추천 결과 조회
+router.get(
+  "/profiles/recommendations",
+  protect,
+  asyncHandler(getGptRecommendations)
+);
+
 export default router;

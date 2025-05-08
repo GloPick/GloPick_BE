@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
 import { generateToken } from "../utils/generateToken";
-import { AuthRequest } from "../middlewares/authMiddleware";
 
 // 회원가입
 export const register = async (req: Request, res: Response) => {
@@ -74,71 +73,5 @@ export const login = async (req: Request, res: Response) => {
       email: user.email,
       token,
     },
-  });
-};
-
-// 사용자 정보 조회
-export const getUserInfo = async (req: AuthRequest, res: Response) => {
-  try {
-    if (!req.user) {
-      return res
-        .status(404)
-        .json({ code: 404, message: "사용자를 찾을 수 없음", data: null });
-    }
-
-    // 비밀번호 제외한 사용자 정보만 반환
-    const user = await User.findById(req.user._id).select("-password");
-    res
-      .status(200)
-      .json({ code: 200, message: "사용자 정보 조회 성공", data: user });
-  } catch (error) {
-    res.status(500).json({ code: 500, message: "서버 오류", data: null });
-  }
-};
-
-// 사용자 정보 수정
-export const updateUserInfo = async (req: AuthRequest, res: Response) => {
-  const { name, email, password, birth, phone } = req.body;
-
-  const user = await User.findById(req.user!._id);
-  if (!user) {
-    return res
-      .status(404)
-      .json({ code: 404, message: "사용자를 찾을 수 없음", data: null });
-  }
-
-  if (name) user.name = name;
-  if (email) user.email = email;
-  if (birth) user.birth = birth;
-  if (phone) user.phone = phone;
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-  }
-
-  await user.save();
-
-  res
-    .status(200)
-    .json({ code: 200, message: "사용자 정보 수정 성공", data: user });
-};
-
-// 사용자 삭제
-export const deleteUser = async (req: AuthRequest, res: Response) => {
-  const user = await User.findById(req.user!._id);
-
-  if (!user) {
-    return res.status(404).json({
-      code: 404,
-      message: "사용자를 찾을 수 없음",
-      data: null,
-    });
-  }
-
-  await user.deleteOne();
-  res.status(200).json({
-    code: 200,
-    message: "회원 탈퇴 완료!",
-    data: null,
   });
 };

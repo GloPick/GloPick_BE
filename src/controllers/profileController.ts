@@ -63,78 +63,6 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     data: null,
   });
 };
-// 사용자 이력 조회 (GET /api/profile)
-export const getProfile = async (req: AuthRequest, res: Response) => {
-  const profiles = await UserProfile.find({ user: req.user!._id }).populate(
-    "user",
-    "name email"
-  );
-
-  if (!profiles) {
-    return res
-      .status(404)
-      .json({ code: 404, message: "이력 정보가 없습니다.", data: null });
-  }
-
-  res.status(200).json({
-    code: 200,
-    message: "이력 정보 조회 성공",
-    data: profiles,
-  });
-};
-// 사용자 이력 수정 (PUT /api/profile/:id)
-export const updateProfile = async (req: AuthRequest, res: Response) => {
-  const profile = await UserProfile.findOne({
-    _id: req.params.id,
-    user: req.user!._id,
-  });
-
-  if (!profile) {
-    return res
-      .status(404)
-      .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
-  }
-
-  const fields = [
-    "education",
-    "experience",
-    "skills",
-    "languages",
-    "desiredSalary",
-    "desiredJob",
-    "additionalNotes",
-  ];
-
-  fields.forEach((field) => {
-    if (req.body[field]) (profile as any)[field] = req.body[field];
-  });
-
-  await profile.save();
-  res.status(200).json({
-    code: 200,
-    message: "이력 정보 수정 성공",
-    data: profile,
-  });
-};
-// 사용자 이력 삭제 (DELETE /api/profile/:id)
-export const deleteProfile = async (req: AuthRequest, res: Response) => {
-  const profile = await UserProfile.findOneAndDelete({
-    _id: req.params.id,
-    user: req.user!._id,
-  });
-
-  if (!profile) {
-    return res
-      .status(404)
-      .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
-  }
-
-  res.status(200).json({
-    code: 200,
-    message: "이력 삭제 완료",
-    data: null,
-  });
-};
 
 // 사용자 이력 정보와 GPT 요청을 처리하는 함수
 
@@ -222,32 +150,5 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ code: 500, message: "GPT 응답 생성 실패", data: null });
-  }
-};
-// GPT 추천 결과 조회 API
-export const getGptRecommendations = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const results = await GptRecommendation.find({ user: req.user!._id })
-      .populate("profile", "-__v")
-      .sort({ createdAt: -1 });
-
-    if (!results || results.length === 0) {
-      return res.status(404).json({
-        code: 404,
-        message: "저장된 추천 결과가 없습니다.",
-        data: null,
-      });
-    }
-
-    res.status(200).json({
-      code: 200,
-      message: "추천 결과 조회 성공",
-      data: results,
-    });
-  } catch (error) {
-    res.status(500).json({ code: 500, message: "조회 실패", data: null });
   }
 };

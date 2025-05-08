@@ -7,7 +7,6 @@ import {
   handleUserProfile,
   generateGPTResponse,
 } from "../controllers/profileController";
-import { getGptRecommendations } from "../controllers/profileController";
 
 const router = express.Router();
 
@@ -19,6 +18,5 @@ router.post("/", protect, asyncHandler(handleUserProfile));
 
 // GPT 추천 생성
 router.post("/:id/gpt", protect, asyncHandler(generateGPTResponse));
-// GPT 추천 결과 조회
-router.get("/recommendations", protect, asyncHandler(getGptRecommendations));
+
 export default router;

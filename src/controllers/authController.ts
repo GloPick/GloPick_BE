@@ -78,7 +78,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 // 사용자 정보 조회
-export const getProfile = async (req: AuthRequest, res: Response) => {
+export const getUserInfo = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res
@@ -97,7 +97,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 };
 
 // 사용자 정보 수정
-export const updateProfile = async (req: AuthRequest, res: Response) => {
+export const updateUserInfo = async (req: AuthRequest, res: Response) => {
   const { name, email, password, birth, phone } = req.body;
 
   const user = await User.findById(req.user!._id);

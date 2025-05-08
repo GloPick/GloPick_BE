@@ -4,6 +4,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import profileRoutes from "./routes/profileRoutes";
 import simulationRoutes from "./routes/simulationRoutes";
+import mypageRoutes from "./routes/mypageRoutes";
 import { setupSwagger } from "./docs/swagger";
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/simulation", simulationRoutes);
+app.use("/api/mypage", mypageRoutes);
 
 // Swagger 문서
 setupSwagger(app);

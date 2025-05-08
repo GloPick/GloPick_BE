@@ -50,6 +50,10 @@ export const simulationSwaggerDocs = {
                     items: { type: "string" },
                     example: ["취업 비자"],
                   },
+                  departureAirport: {
+                    type: "string",
+                    example: "ICN",
+                  },
                   additionalNotes: {
                     type: "string",
                     example: "추운 나라 희망",

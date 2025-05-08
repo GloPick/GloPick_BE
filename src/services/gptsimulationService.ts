@@ -125,7 +125,7 @@ export const generateSimulationResponse = async (input: any) => {
   }
 }
 
-⚠️ 위 JSON 형식 외에는 절대 아무것도 출력하지 마세요. 설명도 하지 마세요.`;
+⚠️ 위 JSON 형식 외에는 절대 아무것도 출력하지 마세요. 설명도 하지 마세요. 반드시 한글로 응답하세요.`;
 
   const response = await axios.post(
     process.env.GPT_API_URL!,

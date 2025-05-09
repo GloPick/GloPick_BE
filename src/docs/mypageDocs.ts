@@ -255,7 +255,7 @@ export const mypageSwaggerDocs = {
       },
     },
 
-    "/api/mypage/profiles/recommendations": {
+    "/api/mypage/recommendations": {
       get: {
         summary: "GPT 추천 결과 목록 조회",
         description: "사용자가 저장한 GPT 추천 결과 리스트 반환",
@@ -356,6 +356,105 @@ export const mypageSwaggerDocs = {
           },
           401: { description: "인증 실패 (토큰 없음 또는 유효하지 않음)" },
           404: { description: "저장된 추천 결과가 없습니다." },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
+
+    "/api/mypage/simulations": {
+      get: {
+        summary: "시뮬레이션 결과 목록 조회",
+        description: "사용자가 생성한 이주 시뮬레이션 결과들을 반환합니다.",
+        tags: ["Mypage"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "시뮬레이션 결과 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      _id: {
+                        type: "string",
+                        example: "6641abc123...",
+                      },
+                      country: {
+                        type: "string",
+                        example: "캐나다",
+                      },
+                      result: {
+                        type: "object",
+                        properties: {
+                          recommendedCity: {
+                            type: "string",
+                            example: "밴쿠버",
+                          },
+                          estimatedMonthlyCost: {
+                            type: "object",
+                            properties: {
+                              housing: {
+                                type: "string",
+                                example: "100",
+                              },
+                              food: {
+                                type: "string",
+                                example: "50",
+                              },
+                              transportation: {
+                                type: "string",
+                                example: "20",
+                              },
+                              etc: {
+                                type: "string",
+                                example: "30",
+                              },
+                              total: {
+                                type: "string",
+                                example: "200",
+                              },
+                            },
+                          },
+                          jobOpportunity: {
+                            type: "string",
+                            example: "IT 관련 직종에 취업 기회가 많음",
+                          },
+                          culturalTips: {
+                            type: "string",
+                            example: "대중교통이 잘 되어 있고 영어 사용 필수",
+                          },
+                          warnings: {
+                            type: "string",
+                            example: "겨울에 눈이 많이 오므로 대비 필요",
+                          },
+                          nearestAirport: {
+                            type: "object",
+                            properties: {
+                              name: {
+                                type: "string",
+                                example: "밴쿠버 국제공항",
+                              },
+                              city: { type: "string", example: "밴쿠버" },
+                              code: { type: "string", example: "YVR" },
+                            },
+                          },
+                        },
+                      },
+                      createdAt: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2025-05-08T12:00:00.000Z",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "인증 실패 (토큰 없음 또는 유효하지 않음)" },
+          404: { description: "시뮬레이션 결과가 없습니다." },
           500: { description: "서버 오류" },
         },
       },

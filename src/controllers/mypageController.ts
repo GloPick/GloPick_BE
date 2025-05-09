@@ -5,6 +5,8 @@ import UserProfile from "../models/UserProfile";
 
 import GptRecommendation from "../models/gptRecommendation";
 import { AuthRequest } from "../middlewares/authMiddleware";
+import SimulationResult from "../models/simulationResult";
+import SimulationInput from "../models/simulationInput";
 
 // 사용자 정보 조회
 export const getUserInfo = async (req: AuthRequest, res: Response) => {
@@ -72,7 +74,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
   });
 };
 
-// 사용자 이력 조회 (GET /api/profile)
+// 사용자 이력 조회
 export const getProfile = async (req: AuthRequest, res: Response) => {
   const profiles = await UserProfile.find({ user: req.user!._id }).populate(
     "user",
@@ -91,7 +93,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
     data: profiles,
   });
 };
-// 사용자 이력 수정 (PUT /api/profile/:id)
+// 사용자 이력 수정
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   const profile = await UserProfile.findOne({
     _id: req.params.id,
@@ -125,7 +127,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     data: profile,
   });
 };
-// 사용자 이력 삭제 (DELETE /api/profile/:id)
+// 사용자 이력 삭제
 export const deleteProfile = async (req: AuthRequest, res: Response) => {
   const profile = await UserProfile.findOneAndDelete({
     _id: req.params.id,
@@ -170,5 +172,32 @@ export const getGptRecommendations = async (
     });
   } catch (error) {
     res.status(500).json({ code: 500, message: "조회 실패", data: null });
+  }
+};
+
+export const getUserSimulations = async (req: AuthRequest, res: Response) => {
+  try {
+    const simulations = await SimulationResult.find({ user: req.user!._id })
+      .select("result country createdAt")
+      .sort({ createdAt: -1 });
+
+    if (!simulations || simulations.length === 0) {
+      return res
+        .status(404)
+        .json({
+          code: 404,
+          message: "시뮬레이션 결과가 없습니다.",
+          data: null,
+        });
+    }
+
+    res.status(200).json({
+      code: 200,
+      message: "시뮬레이션 결과 조회 성공",
+      data: simulations,
+    });
+  } catch (error) {
+    console.error("시뮬레이션 결과 조회 실패:", error);
+    res.status(500).json({ code: 500, message: "서버 오류", data: null });
   }
 };

@@ -12,6 +12,7 @@ import {
 } from "../controllers/mypageController";
 import { protect } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
+import { getUserSimulations } from "../controllers/mypageController";
 
 const router = express.Router();
 
@@ -34,10 +35,8 @@ router.put("/profiles/:id", protect, asyncHandler(updateProfile));
 router.delete("/profiles/:id", protect, asyncHandler(deleteProfile));
 
 // GPT 추천 결과 조회
-router.get(
-  "/profiles/recommendations",
-  protect,
-  asyncHandler(getGptRecommendations)
-);
+router.get("/recommendations", protect, asyncHandler(getGptRecommendations));
+
+router.get("/simulations", protect, asyncHandler(getUserSimulations));
 
 export default router;

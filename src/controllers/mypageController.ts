@@ -2,11 +2,10 @@ import { Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
 import UserProfile from "../models/UserProfile";
-
+import SimulationInput from "../models/simulationInput";
 import GptRecommendation from "../models/gptRecommendation";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import SimulationResult from "../models/simulationResult";
-import SimulationInput from "../models/simulationInput";
 
 // 사용자 정보 조회
 export const getUserInfo = async (req: AuthRequest, res: Response) => {
@@ -182,13 +181,11 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
       .sort({ createdAt: -1 });
 
     if (!simulations || simulations.length === 0) {
-      return res
-        .status(404)
-        .json({
-          code: 404,
-          message: "시뮬레이션 결과가 없습니다.",
-          data: null,
-        });
+      return res.status(404).json({
+        code: 404,
+        message: "시뮬레이션 결과가 없습니다.",
+        data: null,
+      });
     }
 
     res.status(200).json({
@@ -199,5 +196,38 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("시뮬레이션 결과 조회 실패:", error);
     res.status(500).json({ code: 500, message: "서버 오류", data: null });
+  }
+};
+
+// 시뮬레이션 전 추가 정보 조회
+export const getUserSimulationInputs = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const inputs = await SimulationInput.find({ user: req.user!._id }).sort({
+      createdAt: -1,
+    });
+
+    if (!inputs || inputs.length === 0) {
+      return res.status(404).json({
+        code: 404,
+        message: "입력한 시뮬레이션 조건이 없습니다.",
+        data: null,
+      });
+    }
+
+    res.status(200).json({
+      code: 200,
+      message: "입력 조건 조회 성공",
+      data: inputs,
+    });
+  } catch (error) {
+    console.error("입력 조건 조회 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "서버 오류",
+      data: null,
+    });
   }
 };

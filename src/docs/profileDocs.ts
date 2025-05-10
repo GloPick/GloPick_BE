@@ -117,7 +117,30 @@ export const profileSwaggerDocs = {
 
           400: {
             description: "이미 추천된 이력입니다.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "object",
+                      properties: {
+                        recommendationId: {
+                          type: "string",
+                          example: "663fa12345abcd...",
+                        },
+                        profileId: {
+                          type: "string",
+                          example: "681f6035615bf...",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
+
           401: {
             description: "인증 실패",
           },

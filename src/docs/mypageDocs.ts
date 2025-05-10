@@ -459,5 +459,49 @@ export const mypageSwaggerDocs = {
         },
       },
     },
+
+    "/api/mypage/simulations/inputs": {
+      get: {
+        summary: "사용자 입력 시뮬레이션 조건 조회",
+        description:
+          "로그인한 사용자가 이전에 입력한 시뮬레이션 조건 목록을 반환합니다.",
+        tags: ["Mypage"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "조건 목록 반환 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      _id: { type: "string", example: "665abc..." },
+                      selectedCountry: { type: "string", example: "캐나다" },
+                      budget: { type: "number", example: 1000 },
+                      duration: { type: "string", example: "6개월" },
+                      languageLevel: { type: "string", example: "능숙" },
+                      jobTypes: {
+                        type: "array",
+                        items: { type: "string" },
+                        example: ["정규직", "프리랜서"],
+                      },
+                      createdAt: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2025-05-09T14:23:00Z",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "입력 기록 없음" },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
   },
 };

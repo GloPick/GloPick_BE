@@ -65,7 +65,28 @@ export const simulationSwaggerDocs = {
         },
         responses: {
           201: { description: "시뮬레이션 입력 정보 저장 성공" },
-          400: { description: "추천 결과 없음" },
+          400: {
+            description: "중복된 시뮬레이션 입력",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    data: {
+                      type: "object",
+                      properties: {
+                        inputId: {
+                          type: "string",
+                          example: "665abc123...",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+
           500: { description: "서버 오류" },
         },
       },
@@ -131,7 +152,7 @@ export const simulationSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  selectedCity: { type: "string", example: "밴쿠버" },
+                  selectedCityIndex: { type: "number", example: "1" },
                 },
               },
             },

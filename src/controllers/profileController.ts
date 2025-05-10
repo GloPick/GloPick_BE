@@ -18,21 +18,28 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   } = req.body;
 
   // 이전 이력과 동일한 내용이면 등록 불가
-  const normalize = (value: string) => value?.trim().toLowerCase() || "";
+  const normalize = (value: string) => (value || "").trim().toLowerCase();
 
-  const normalizeArray = (arr: string[]) =>
-    (arr || []).map(normalize).sort().join(",");
+  const normalizeArray = (arr: string[] = []) => arr.map(normalize).sort();
+
+  const arraysEqual = (a: string[], b: string[]) => {
+    if (!a || !b || a.length !== b.length) return false;
+    return a.every((val, i) => val === b[i]);
+  };
 
   const existingProfiles = await UserProfile.find({ user: req.user!._id });
 
-  const isDuplicate = existingProfiles.some((profile) => {
+  const isDuplicate = existingProfiles.find((profile) => {
     return (
       normalize(profile.education) === normalize(education) &&
       normalize(profile.experience) === normalize(experience) &&
-      normalizeArray(profile.skills) === normalizeArray(skills) &&
-      normalizeArray(profile.languages) === normalizeArray(languages) &&
-      profile.desiredSalary === desiredSalary &&
-      normalize(profile.desiredJob || "") === normalize(desiredJob) &&
+      arraysEqual(normalizeArray(profile.skills), normalizeArray(skills)) &&
+      arraysEqual(
+        normalizeArray(profile.languages),
+        normalizeArray(languages)
+      ) &&
+      Number(profile.desiredSalary) === Number(desiredSalary) &&
+      normalize(profile.desiredJob || "") === normalize(desiredJob || "") &&
       normalize(profile.additionalNotes || "") ===
         normalize(additionalNotes || "")
     );
@@ -42,7 +49,9 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     return res.status(400).json({
       code: 400,
       message: "이전 이력과 내용이 동일합니다. 등록이 불가합니다.",
-      data: null,
+      data: {
+        profileId: isDuplicate._id,
+      },
     });
   }
 
@@ -127,7 +136,10 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
       return res.status(400).json({
         code: 400,
         message: "이미 추천받은 이력입니다.",
-        data: null,
+        data: {
+          recommendationId: existingRecommendation._id,
+          profileId: profile._id,
+        },
       });
     }
 

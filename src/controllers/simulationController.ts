@@ -43,6 +43,38 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
     }
 
     const selectedCountry = recommendation.rankings[selectedRankIndex].country;
+    // 이미 시뮬레이션을 실행했던 추가 이력인지 확인
+    const isDuplicate = await SimulationInput.findOne({
+      user: req.user!._id,
+      profile: profileId,
+      selectedCountry,
+      budget,
+      duration,
+      languageLevel,
+      hasLicense,
+      jobTypes: { $all: jobTypes, $size: jobTypes.length },
+      requiredFacilities: {
+        $all: requiredFacilities,
+        $size: requiredFacilities.length,
+      },
+      accompanyingFamily: {
+        $all: accompanyingFamily,
+        $size: accompanyingFamily.length,
+      },
+      visaStatus: { $all: visaStatus, $size: visaStatus.length },
+      departureAirport,
+      additionalNotes,
+    });
+
+    if (isDuplicate) {
+      return res.status(400).json({
+        code: 400,
+        message: "이미 동일한 조건으로 시뮬레이션 입력이 존재합니다.",
+        data: {
+          inputId: isDuplicate._id,
+        },
+      });
+    }
 
     const input = await SimulationInput.create({
       user: req.user!._id,
@@ -89,7 +121,10 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const cities = await getCityRecommendations(input);
+    const cities = await getCityRecommendations(input); // GPT 호출 → 도시 3개 추천
+
+    input.recommendedCities = cities.map((city: { name: string }) => city.name);
+    await input.save();
 
     res.status(200).json({
       code: 200,
@@ -108,7 +143,7 @@ export const generateAndSaveSimulation = async (
   res: Response
 ) => {
   const { id } = req.params;
-  const { selectedCity } = req.body;
+  const { selectedCityIndex } = req.body;
 
   try {
     const input = await SimulationInput.findOne({
@@ -116,22 +151,26 @@ export const generateAndSaveSimulation = async (
       user: req.user!._id,
     });
 
-    if (!input) {
+    if (!input || !Array.isArray(input.recommendedCities)) {
       return res.status(404).json({
         code: 404,
-        message: "시뮬레이션 입력 정보를 찾을 수 없습니다.",
+        message: "입력 정보 또는 추천 도시 목록을 찾을 수 없습니다.",
         data: null,
       });
     }
 
-    if (!selectedCity) {
+    if (
+      typeof selectedCityIndex !== "number" ||
+      !input.recommendedCities[selectedCityIndex]
+    ) {
       return res.status(400).json({
         code: 400,
-        message: "선택한 도시가 필요합니다.",
+        message: "유효한 도시 인덱스가 필요합니다.",
         data: null,
       });
     }
 
+    const selectedCity = input.recommendedCities[selectedCityIndex];
     input.selectedCity = selectedCity;
     await input.save();
 

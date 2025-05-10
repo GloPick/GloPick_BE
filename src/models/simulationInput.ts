@@ -23,6 +23,7 @@ const simulationInputSchema = new mongoose.Schema({
   visaStatus: [String], // 비자 종류 및 상태
   additionalNotes: { type: String }, // 기타 희망사항
   selectedCity: { type: String }, // 선택 도시
+  recommendedCities: { type: [String], default: [] }, // 도시 3개
   departureAirport: { type: String, required: true }, // 출발 공항
 });
 

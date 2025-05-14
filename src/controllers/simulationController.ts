@@ -12,10 +12,9 @@ import { createFlightLinks } from "../utils/flightLinkGenerator";
 // 사용자 입력 저장
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
   try {
+    const { recommendationId, profileId } = req.params;
     const {
-      recommendationId,
       selectedRankIndex,
-      profileId,
       budget,
       duration,
       languageLevel,
@@ -35,8 +34,8 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
     });
 
     if (!recommendation || !recommendation.rankings[selectedRankIndex]) {
-      return res.status(400).json({
-        code: 400,
+      return res.status(404).json({
+        code: 404,
         message: "선택한 추천 결과를 찾을 수 없습니다.",
         data: null,
       });
@@ -120,10 +119,22 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
         data: null,
       });
     }
+    // 중복 처리
+    if (input.recommendedCities && input.recommendedCities.length > 0) {
+      return res.status(400).json({
+        code: 400,
+        message: "이미 도시 추천이 완료된 입력입니다.",
+        data: {
+          recommendedCities: input.recommendedCities,
+          inputId: input._id,
+        },
+      });
+    }
 
     const cities = await getCityRecommendations(input); // GPT 호출 → 도시 3개 추천
 
     input.recommendedCities = cities.map((city: { name: string }) => city.name);
+
     await input.save();
 
     res.status(200).json({

@@ -503,5 +503,135 @@ export const mypageSwaggerDocs = {
         },
       },
     },
+
+    "/api/mypage/recommendations/by-profile/{profileId}": {
+      get: {
+        summary: "특정 이력의 GPT 추천 결과 조회",
+        description: "해당 이력(profileId)에 대한 GPT 추천 결과 반환",
+        tags: ["Mypage"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "profileId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "이력 ID(profileId)",
+          },
+        ],
+        responses: {
+          200: {
+            description: "추천 결과 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    _id: { type: "string", example: "663fa12345abcd..." },
+                    profile: {
+                      type: "object",
+                      properties: {
+                        education: { type: "string" },
+                        experience: { type: "string" },
+                        skills: { type: "array", items: { type: "string" } },
+                        languages: { type: "array", items: { type: "string" } },
+                      },
+                    },
+                    rankings: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          country: { type: "string" },
+                          job: { type: "string" },
+                          reason: { type: "string" },
+                        },
+                      },
+                    },
+                    createdAt: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "해당 이력에 대한 추천 결과 없음" },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
+
+    "/api/mypage/simulations/by-profile/{profileId}": {
+      get: {
+        summary: "특정 이력의 시뮬레이션 결과 조회",
+        description: "해당 이력(profileId)에 대해 실행된 시뮬레이션 결과 반환",
+        tags: ["Mypage"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "profileId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "이력 ID(profileId)",
+          },
+        ],
+        responses: {
+          200: {
+            description: "시뮬레이션 결과 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      _id: { type: "string", example: "664abc..." },
+                      country: { type: "string", example: "호주" },
+                      result: {
+                        type: "object",
+                        properties: {
+                          recommendedCity: {
+                            type: "string",
+                            example: "시드니",
+                          },
+                          estimatedMonthlyCost: {
+                            type: "object",
+                            properties: {
+                              housing: { type: "string" },
+                              food: { type: "string" },
+                              transportation: { type: "string" },
+                              etc: { type: "string" },
+                              total: { type: "string" },
+                            },
+                          },
+                          jobOpportunity: { type: "string" },
+                          culturalTips: { type: "string" },
+                          warnings: { type: "string" },
+                          nearestAirport: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string" },
+                              city: { type: "string" },
+                              code: { type: "string" },
+                            },
+                          },
+                        },
+                      },
+                      createdAt: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2025-05-08T12:00:00.000Z",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "해당 이력에 대한 시뮬레이션 결과 없음" },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
   },
 };

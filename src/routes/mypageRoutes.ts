@@ -4,6 +4,8 @@ import {
   updateUserInfo,
   deleteUser,
   getGptRecommendations,
+  getGptRecommendationByProfileId,
+  getSimulationsByProfileId,
 } from "../controllers/mypageController";
 import {
   getProfile,
@@ -17,7 +19,7 @@ import { getUserSimulations } from "../controllers/mypageController";
 
 const router = express.Router();
 
-// 사용자 정보 관리
+// 사용자 정보 관리 API
 
 // 사용자 정보 조회
 router.get("/account", protect, asyncHandler(getUserInfo));
@@ -26,7 +28,7 @@ router.put("/account", protect, asyncHandler(updateUserInfo));
 // 회원 탈퇴
 router.delete("/account", protect, asyncHandler(deleteUser));
 
-//  이력 관리
+//  이력 관리 API
 
 // 사용자 이력 조회 (GET /api/profile)
 router.get("/profiles", protect, asyncHandler(getProfile));
@@ -46,4 +48,16 @@ router.get(
 // 시뮬레이션 결과 조회
 router.get("/simulations", protect, asyncHandler(getUserSimulations));
 
+// 특정 이력별 GPT 추천 결과 조회 API
+router.get(
+  "/recommendations/by-profile/:profileId",
+  protect,
+  asyncHandler(getGptRecommendationByProfileId)
+);
+// 특정 이력별 시뮬레이션 결과 조회 API
+router.get(
+  "/simulations/by-profile/:profileId",
+  protect,
+  asyncHandler(getSimulationsByProfileId)
+);
 export default router;

@@ -73,40 +73,6 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   });
 };
 
-// 사용자 이력 정보와 GPT 요청을 처리하는 함수
-
-export const handleUserProfile = async (req: Request, res: Response) => {
-  const userData = req.body; // 사용자가 입력한 데이터
-
-  try {
-    // 이력 등록
-    const profile = await UserProfile.create({
-      user: req.user!._id, // 로그인한 사용자 정보
-      ...userData,
-    });
-
-    // 이력 정보와 함께 GPT 응답 생성
-    const gptResponse = await getGPTResponse(profile);
-
-    await GptRecommendation.create({
-      user: req.user!._id,
-      profile: profile._id,
-      rankings: gptResponse.rankings,
-    });
-
-    res.status(201).json({
-      code: 201,
-      message: "이력 등록 및 GPT 응답 생성 성공",
-      data: {
-        profile,
-        gptResponse,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ code: 500, message: "이력 등록 실패", data: null });
-  }
-};
-
 // GPT 응답 생성 API
 export const generateGPTResponse = async (req: Request, res: Response) => {
   const { id } = req.params; // URL 경로에서 id 추출

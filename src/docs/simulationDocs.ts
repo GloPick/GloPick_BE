@@ -1,11 +1,27 @@
 // Simulation
 export const simulationSwaggerDocs = {
   paths: {
-    "/api/simulation/input": {
+    "/api/simulation/{recommendationId}/{profileId}": {
       post: {
         summary: "시뮬레이션 입력 정보 저장",
         tags: ["Simulation"],
         security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "recommendationId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "GPT 추천 결과 ID",
+          },
+          {
+            name: "profileId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "사용자 이력(Profile) ID",
+          },
+        ],
         requestBody: {
           required: true,
           content: {
@@ -13,15 +29,8 @@ export const simulationSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  recommendationId: {
-                    type: "string",
-                    example: "662fabc123456abc123456aa",
-                  },
                   selectedRankIndex: { type: "integer", example: 0 },
-                  profileId: {
-                    type: "string",
-                    example: "6631abc123456abc123456ab",
-                  },
+
                   budget: { type: "number", example: 3000 },
                   duration: { type: "string", example: "1년" },
                   languageLevel: {
@@ -115,7 +124,11 @@ export const simulationSwaggerDocs = {
                   items: {
                     type: "object",
                     properties: {
-                      name: { type: "string", example: "밴쿠버" },
+                      name: {
+                        type: "array",
+                        items: { type: "string" },
+                        example: ["밴쿠버", "토론토", "몬트리올"],
+                      },
                       summary: {
                         type: "string",
                         example: "기후 온화하고 교통 좋음",
@@ -126,7 +139,37 @@ export const simulationSwaggerDocs = {
               },
             },
           },
-          404: { description: "입력 정보 없음" },
+          400: {
+            description: "이미 도시 추천이 완료된 입력",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: {
+                      type: "string",
+                      example: "이미 도시 추천이 완료된 입력입니다.",
+                    },
+                    data: {
+                      type: "object",
+                      properties: {
+                        recommendedCities: {
+                          type: "array",
+                          items: { type: "string" },
+                          example: ["밴쿠버", "토론토", "몬트리올"],
+                        },
+                        inputId: {
+                          type: "string",
+                          example: "664df123abc...",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          404: { description: "선택한 추천 결과를 찾을 수 없습니다." },
           500: { description: "GPT 호출 실패" },
         },
       },

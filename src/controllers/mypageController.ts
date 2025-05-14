@@ -85,11 +85,24 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       .status(404)
       .json({ code: 404, message: "이력 정보가 없습니다.", data: null });
   }
+  // 각 이력에 대한 GPT 추천 결과 id 찾기
+  const resultsWithResponseId = await Promise.all(
+    profiles.map(async (profile) => {
+      const recommendation = await GptRecommendation.findOne({
+        profile: profile._id,
+      }).select("_id");
+
+      return {
+        ...profile.toObject(),
+        responseId: recommendation?._id || null,
+      };
+    })
+  );
 
   res.status(200).json({
     code: 200,
     message: "이력 정보 조회 성공",
-    data: profiles,
+    data: resultsWithResponseId,
   });
 };
 // 사용자 이력 수정

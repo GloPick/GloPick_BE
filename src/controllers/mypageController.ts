@@ -18,9 +18,17 @@ export const getUserInfo = async (req: AuthRequest, res: Response) => {
 
     // 비밀번호 제외한 사용자 정보만 반환
     const user = await User.findById(req.user._id).select("-password");
-    res
-      .status(200)
-      .json({ code: 200, message: "사용자 정보 조회 성공", data: user });
+    res.status(200).json({
+      code: 200,
+      message: "사용자 정보 조회 성공",
+      data: {
+        userId: user!._id,
+        name: user!.name,
+        email: user!.email,
+        birth: user!.birth,
+        phone: user!.phone,
+      },
+    });
   } catch (error) {
     res.status(500).json({ code: 500, message: "서버 오류", data: null });
   }
@@ -48,9 +56,17 @@ export const updateUserInfo = async (req: AuthRequest, res: Response) => {
 
   await user.save();
 
-  res
-    .status(200)
-    .json({ code: 200, message: "사용자 정보 수정 성공", data: user });
+  res.status(200).json({
+    code: 200,
+    message: "사용자 정보 수정 성공",
+    data: {
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      birth: user.birth,
+      phone: user.phone,
+    },
+  });
 };
 
 // 회원 탈퇴 API
@@ -92,8 +108,17 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         profile: profile._id,
       }).select("_id");
 
+      const profileObj = profile.toObject() as any;
+      const user = profileObj.user;
+
       return {
-        ...profile.toObject(),
+        profileId: profileObj._id,
+        userId: profileObj.user?._id || null,
+        name: profileObj.user?.name || null,
+        email: profileObj.user?.email || null,
+        country: profileObj.country,
+        job: profileObj.job,
+        spec: profileObj.spec,
         responseId: recommendation?._id || null,
       };
     })
@@ -133,16 +158,30 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   });
 
   await profile.save();
+
+  const profileObj = profile.toObject();
+  const responseData = {
+    profileId: profileObj._id,
+    education: profileObj.education,
+    experience: profileObj.experience,
+    skills: profileObj.skills,
+    languages: profileObj.languages,
+    desiredSalary: profileObj.desiredSalary,
+    desiredJob: profileObj.desiredJob,
+    additionalNotes: profileObj.additionalNotes,
+  };
+
   res.status(200).json({
     code: 200,
     message: "이력 정보 수정 성공",
-    data: profile,
+    data: responseData,
   });
 };
 // 사용자 이력 삭제 API
 export const deleteProfile = async (req: AuthRequest, res: Response) => {
+  const profileId = req.params.id;
   const profile = await UserProfile.findOneAndDelete({
-    _id: req.params.id,
+    _id: profileId,
     user: req.user!._id,
   });
 
@@ -151,6 +190,17 @@ export const deleteProfile = async (req: AuthRequest, res: Response) => {
       .status(404)
       .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
   }
+  // 관련 GPT 추천 삭제
+  const recommendations = await GptRecommendation.find({ profile: profileId });
+  await GptRecommendation.deleteMany({ profile: profileId });
+
+  // 관련 SimulationInput 삭제
+  const inputs = await SimulationInput.find({ profile: profileId });
+  const inputIds = inputs.map((input) => input._id);
+  await SimulationInput.deleteMany({ profile: profileId });
+
+  // 관련 SimulationResult 삭제
+  await SimulationResult.deleteMany({ input: { $in: inputIds } });
 
   res.status(200).json({
     code: 200,
@@ -177,10 +227,32 @@ export const getGptRecommendations = async (
       });
     }
 
+    const formattedResults = results.map((result) => {
+      const obj = result.toObject() as any;
+
+      return {
+        recommendationId: obj._id,
+        profile: {
+          education: obj.profile?.education || null,
+          experience: obj.profile?.experience || null,
+          skills: obj.profile?.skills || [],
+          languages: obj.profile?.languages || [],
+          desiredSalary: obj.profile?.desiredSalary || null,
+          desiredJob: obj.profile?.desiredJob || null,
+          additionalNotes: obj.profile?.additionalNotes || null,
+        },
+        rankings: (obj.rankings || []).map((r: any) => ({
+          country: r.country,
+          job: r.job,
+          reason: r.reason,
+        })),
+      };
+    });
+
     res.status(200).json({
       code: 200,
       message: "추천 결과 조회 성공",
-      data: results,
+      data: formattedResults,
     });
   } catch (error) {
     res.status(500).json({ code: 500, message: "조회 실패", data: null });
@@ -202,10 +274,27 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const formattedSimulations = simulations.map((sim) => {
+      const simObj = sim.toObject();
+      const result = simObj.result || {};
+
+      return {
+        simulationId: simObj._id,
+        country: simObj.country,
+        recommendedCity: result.recommendedCity || null,
+        employmentProbability: result.employmentProbability || 0,
+        migrationSuitability: result.migrationSuitability || 0,
+        localInfo: result.localInfo || {},
+        initialSetup: result.initialSetup || {},
+        jobReality: result.jobReality || {},
+        culturalIntegration: result.culturalIntegration || {},
+      };
+    });
+
     res.status(200).json({
       code: 200,
       message: "시뮬레이션 결과 조회 성공",
-      data: simulations,
+      data: formattedSimulations,
     });
   } catch (error) {
     console.error("시뮬레이션 결과 조회 실패:", error);
@@ -231,10 +320,31 @@ export const getUserSimulationInputs = async (
       });
     }
 
+    const formatted = inputs.map((input) => {
+      const obj = input.toObject();
+
+      return {
+        inputId: obj._id,
+        selectedCountry: obj.selectedCountry,
+        budget: obj.budget,
+        duration: obj.duration,
+        languageLevel: obj.languageLevel,
+        hasLicense: obj.hasLicense,
+        jobTypes: obj.jobTypes,
+        requiredFacilities: obj.requiredFacilities,
+        accompanyingFamily: obj.accompanyingFamily,
+        visaStatus: obj.visaStatus,
+        additionalNotes: obj.additionalNotes,
+        recommendedCities: obj.recommendedCities,
+        departureAirport: obj.departureAirport,
+        selectedCity: obj.selectedCity,
+      };
+    });
+
     res.status(200).json({
       code: 200,
       message: "입력 조건 조회 성공",
-      data: inputs,
+      data: formatted,
     });
   } catch (error) {
     console.error("입력 조건 조회 실패:", error);
@@ -267,10 +377,30 @@ export const getGptRecommendationByProfileId = async (
       });
     }
 
+    const recObj = recommendation.toObject() as any;
+    const rankings = (recObj.rankings || []).map((r: any) => ({
+      country: r.country,
+      job: r.job,
+      reason: r.reason,
+    }));
+
+    const formatted = {
+      recommendationId: recObj._id,
+      profileId: recObj.profile?._id || null,
+      education: recObj.profile?.education || null,
+      experience: recObj.profile?.experience || null,
+      skills: recObj.profile?.skills || [],
+      languages: recObj.profile?.languages || [],
+      desiredSalary: recObj.profile?.desiredSalary || null,
+      desiredJob: recObj.profile?.desiredJob || null,
+      additionalNotes: recObj.profile?.additionalNotes || null,
+      rankings,
+    };
+
     res.status(200).json({
       code: 200,
       message: "추천 결과 조회 성공",
-      data: recommendation,
+      data: formatted,
     });
   } catch (error) {
     console.error("GPT 추천 결과 조회 실패:", error);
@@ -310,10 +440,27 @@ export const getSimulationsByProfileId = async (
       });
     }
 
+    const formatted = simulations.map((sim) => {
+      const obj = sim.toObject();
+      const result = obj.result || {};
+
+      return {
+        simulationId: obj._id,
+        country: obj.country,
+        recommendedCity: result.recommendedCity || null,
+        employmentProbability: result.employmentProbability || 0,
+        migrationSuitability: result.migrationSuitability || 0,
+        localInfo: result.localInfo || {},
+        initialSetup: result.initialSetup || {},
+        jobReality: result.jobReality || {},
+        culturalIntegration: result.culturalIntegration || {},
+      };
+    });
+
     res.status(200).json({
       code: 200,
       message: "시뮬레이션 결과 조회 성공",
-      data: simulations,
+      data: formatted,
     });
   } catch (error) {
     console.error("시뮬레이션 결과 조회 실패:", error);

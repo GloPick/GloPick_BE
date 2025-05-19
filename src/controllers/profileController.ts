@@ -112,7 +112,7 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     // GPT 호출 및 추천 결과 저장
     const gptResponse = await getGPTResponse(profile);
 
-    await GptRecommendation.create({
+    const recommendation = await GptRecommendation.create({
       user: req.user!._id,
       profile: profile._id,
       rankings: gptResponse.rankings,
@@ -121,7 +121,7 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     res.status(200).json({
       code: 200,
       message: "GPT 응답 생성 성공",
-      data: gptResponse,
+      data: { gptResponse, recommendationid: recommendation._id },
     });
   } catch (error) {
     console.error(error);

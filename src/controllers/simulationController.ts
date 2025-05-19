@@ -91,10 +91,25 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       additionalNotes,
     });
 
+    const inputId = input._id;
+
     res.status(201).json({
       code: 201,
       message: "시뮬레이션 입력 정보 저장 완료",
-      data: input,
+      data: {
+        inputId,
+        selectedCountry,
+        budget,
+        duration,
+        languageLevel,
+        hasLicense,
+        jobTypes,
+        requiredFacilities,
+        accompanyingFamily,
+        visaStatus,
+        departureAirport,
+        additionalNotes,
+      },
     });
   } catch (error) {
     console.error("입력 저장 실패:", error);
@@ -187,7 +202,8 @@ export const generateAndSaveSimulation = async (
 
     const gptResult = await generateSimulationResponse(input);
     const arrivalAirportCode = gptResult?.nearestAirport?.code || selectedCity;
-
+    const { employmentProbability, migrationSuitability, ...restResult } =
+      gptResult;
     const flightLinks = createFlightLinks(
       input.departureAirport,
       arrivalAirportCode
@@ -197,16 +213,28 @@ export const generateAndSaveSimulation = async (
       user: req.user!._id,
       input: id,
       country: input.selectedCountry,
-      result: gptResult,
+      result: {
+        ...restResult,
+        employmentProbability,
+        migrationSuitability,
+      },
     });
+
+    const simulationId = saved._id;
+    const savedObj = saved.toObject();
+    const formatted = {
+      simulationId,
+      result: {
+        country: savedObj.country,
+        ...savedObj.result,
+      },
+      flightLinks,
+    };
 
     res.status(201).json({
       code: 201,
       message: "시뮬레이션 생성 및 저장 완료",
-      data: {
-        simulationResult: saved,
-        flightLinks,
-      },
+      data: formatted,
     });
   } catch (error) {
     console.error("시뮬레이션 생성 실패:", error);

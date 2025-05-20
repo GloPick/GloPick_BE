@@ -8,6 +8,10 @@ import {
   getCityRecommendations,
 } from "../services/gptsimulationService";
 import { createFlightLinks } from "../utils/flightLinkGenerator";
+import {
+  calculateEmploymentProbability,
+  calculateMigrationSuitability,
+} from "../services/gptCalculation";
 
 // 사용자 입력 저장
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
@@ -202,12 +206,51 @@ export const generateAndSaveSimulation = async (
 
     const gptResult = await generateSimulationResponse(input);
     const arrivalAirportCode = gptResult?.nearestAirport?.code || selectedCity;
-    const { employmentProbability, migrationSuitability, ...restResult } =
-      gptResult;
+
     const flightLinks = createFlightLinks(
       input.departureAirport,
       arrivalAirportCode
     );
+
+    // 취업 가능성 및 이주 추천도 부분 리팩토링 필요!!!!!!!!!!!!!!!!!!!!!!!!!
+    // 취업 가능성
+    const employmentProbability = calculateEmploymentProbability({
+      jobDemand: 0.8,
+      foreignAcceptance: 0.7,
+      specPreparation: 0.9,
+    });
+
+    const totalCost = parseFloat(gptResult.estimatedMonthlyCost?.total || "0");
+    const budgetSuitability =
+      totalCost > 0
+        ? input.budget > totalCost
+          ? 1.0
+          : input.budget === totalCost
+          ? 0.7
+          : 0.3
+        : 0.7;
+
+    const familySuitability =
+      input.accompanyingFamily && input.accompanyingFamily.length > 0
+        ? 1.0
+        : 0.5;
+
+    const communitySupport =
+      gptResult.culturalIntegration?.koreanResourcesLinks?.length > 0
+        ? 1.0
+        : 0.3;
+
+    //이주 추천도
+    const migrationSuitability = calculateMigrationSuitability({
+      languageLevel: input.languageLevel,
+      visaType: input.visaStatus[0],
+      budgetSuitability,
+      familySuitability,
+      communitySupport,
+      employmentProbability,
+    });
+
+    const { ...restResult } = gptResult;
 
     const saved = await SimulationResult.create({
       user: req.user!._id,

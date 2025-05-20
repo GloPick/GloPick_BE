@@ -242,10 +242,7 @@ export const simulationSwaggerDocs = {
                                       type: "string",
                                       example: "Calgary",
                                     },
-                                    code: {
-                                      type: "string",
-                                      example: "YYC",
-                                    },
+                                    code: { type: "string", example: "YYC" },
                                   },
                                 },
                                 estimatedMonthlyCost: {
@@ -272,6 +269,14 @@ export const simulationSwaggerDocs = {
                                 warnings: {
                                   type: "string",
                                   example: "비자 준비 필요",
+                                },
+                                employmentProbability: {
+                                  type: "number",
+                                  example: 82,
+                                },
+                                migrationSuitability: {
+                                  type: "number",
+                                  example: 76,
                                 },
                               },
                             },

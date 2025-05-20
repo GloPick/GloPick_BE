@@ -58,7 +58,7 @@ export const profileSwaggerDocs = {
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "사용자 이력 ID",
+            description: "profileId",
           },
         ],
         security: [

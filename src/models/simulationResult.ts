@@ -9,22 +9,66 @@ const simulationResultSchema = new mongoose.Schema({
   },
   country: { type: String, required: true },
   result: {
-    recommendedCity: String, // 추천 도시
-    estimatedMonthlyCost: {
-      housing: String, // 주거비용 (만원)
-      food: String, // 식비 (만원)
-      transportation: String, // 교통비 (만원)
-      etc: String, // 기타 생활비 (만원)
-      total: String, // 총합 (만원)
+    recommendedCity: String,
+    // 지역 정보
+    // 대중교통, 치안, 기후, 한인커뮤니티,필수시설, 나라문화, 주의사항
+    localInfo: {
+      publicTransport: String,
+      safetyLevel: String,
+      climateSummary: String,
+      koreanCommunity: String,
+      essentialFacilities: [String],
+      culturalTips: String,
+      warnings: String,
     },
-    jobOpportunity: String, // 취업 가능성 및 추천 직종 설명
-    culturalTips: String, // 문화, 언어, 생활 관련 팁
-    warnings: String, // 유의사항 및 주의할 점
+    // 한 달 예산 전략
+    // 주거비, 식비, 교통 비, 기타비용, 한 달 총 비용, 1년 비용, 절약 팁
+    estimatedMonthlyCost: {
+      housing: String,
+      food: String,
+      transportation: String,
+      etc: String,
+      total: String,
+      oneYearCost: Number,
+      costCuttingTips: String,
+    },
+
+    // 인근 공항
+    // 공항 이름, 도시, 공항 코드
     nearestAirport: {
       name: String,
       city: String,
       code: String,
     },
+
+    // 초기 정착 지원
+    // 단기/장기 주거 형태, 통신, 계좌
+    initialSetup: {
+      shortTermHousingOptions: [String],
+      longTermHousingPlatforms: [String],
+      mobilePlan: String,
+      bankAccount: String,
+    },
+    // 취업 현실 정보
+    // 추천 직종, 구직 플랫폼, 취업 가능성, 언어 조건, 비자 조건
+    jobReality: {
+      commonJobs: [String],
+      jobSearchPlatforms: [String],
+      jobOpportunity: String,
+      languageRequirement: String,
+      visaLimitationTips: String,
+    },
+    // 문화 적응 도움 정보
+    // 한국인 비율, 외국인 비율, 한식당/한국마트 위치 정보, 다문화 적응 프로그램
+    // (타 국가 비율 평균과 함께) 제공
+    culturalIntegration: {
+      koreanPopulationRate: String,
+      foreignResidentRatio: String,
+      koreanResourcesLinks: [String],
+      culturalIntegrationPrograms: [String],
+    },
+    employmentProbability: { type: Number },
+    migrationSuitability: { type: Number },
   },
 });
 

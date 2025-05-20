@@ -121,7 +121,7 @@ export const generateGPTResponse = async (req: Request, res: Response) => {
     res.status(200).json({
       code: 200,
       message: "GPT 응답 생성 성공",
-      data: { gptResponse, recommendationid: recommendation._id },
+      data: { gptResponse, recommendationId: recommendation._id },
     });
   } catch (error) {
     console.error(error);

@@ -113,12 +113,19 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
       return {
         profileId: profileObj._id,
-        userId: profileObj.user?._id || null,
-        name: profileObj.user?.name || null,
-        email: profileObj.user?.email || null,
-        country: profileObj.country,
-        job: profileObj.job,
-        spec: profileObj.spec,
+        user: {
+          userId: profileObj.user?._id || null,
+          name: profileObj.user?.name || null,
+          email: profileObj.user?.email || null,
+        },
+
+        education: profileObj.education,
+        experience: profileObj.experience,
+        skills: profileObj.skills,
+        languages: profileObj.languages,
+        desiredSalary: profileObj.desiredSalary,
+        desiredJob: profileObj.desiredJob,
+        additionalNotes: profileObj.additionalNotes,
         responseId: recommendation?._id || null,
       };
     })

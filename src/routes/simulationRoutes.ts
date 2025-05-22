@@ -7,6 +7,7 @@ import {
   recommendCities,
 } from "../controllers/simulationController";
 import { getSimulationFlightLinks } from "../controllers/simulationController";
+import { calculateSimulationScores } from "../controllers/simulationController";
 
 const router = express.Router();
 
@@ -28,6 +29,12 @@ router.get(
   "/:id/flight-links",
   protect,
   asyncHandler(getSimulationFlightLinks)
+);
+// 취업 가능성 및 이주 추천도
+router.get(
+  "/scores/:simulationInputId",
+  protect,
+  asyncHandler(calculateSimulationScores)
 );
 
 export default router;

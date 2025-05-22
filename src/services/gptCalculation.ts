@@ -1,78 +1,88 @@
-// 사용자 조건 기반 취업 가능성
-// 직업 수요도, 외국인 채용도, 현재 스펙으로 가능성
-export function calculateEmploymentProbability({
-  jobDemand,
-  foreignAcceptance,
-  specPreparation,
-}: {
-  jobDemand: number;
-  foreignAcceptance: number;
-  specPreparation: number;
+// 점수 매핑
+const levelMaps = {
+  jobDemand: { 높음: 1.0, 중간: 0.7, 낮음: 0.3, 거의없음: 0 },
+  foreignAcceptance: { 높음: 1.0, 중간: 0.7, 낮음: 0.3, 거의없음: 0 },
+  specPreparation: { 쉬움: 1.0, 보통: 0.6, 어려움: 0.3, 불가: 0.1 },
+
+  budgetLevel: {
+    "매우 적합": 1.0,
+    적당함: 0.7,
+    부족함: 0.5,
+    "매우 부족함": 0,
+  },
+
+  languageability: {
+    "매우 적합": 1.0,
+    적당함: 0.7,
+    부족함: 0.5,
+    "매우 부족함": 0,
+  },
+
+  accompanyLevel: {
+    "매우 적합": 1.0,
+    적당함: 0.7,
+    부족함: 0.5,
+    "매우 부족함": 0,
+  },
+  visaLevel: {
+    "매우 적합": 1.0,
+    적당함: 0.7,
+    부족함: 0.5,
+    "매우 부족함": 0,
+  },
+};
+
+// 1. 취업 가능성 계산 함수
+export function calculateEmploymentProbability(levels: {
+  jobDemandLevel: string;
+  foreignAcceptanceLevel: string;
+  specPreparationLevel: string;
 }): number {
-  const weights = {
-    jobDemand: 0.3,
-    foreignAcceptance: 0.3,
-    specPreparation: 0.4,
-  };
+  const jobScore =
+    (levelMaps.jobDemand[
+      levels.jobDemandLevel as keyof typeof levelMaps.jobDemand
+    ] ?? 0) *
+      0.4 +
+    (levelMaps.foreignAcceptance[
+      levels.foreignAcceptanceLevel as keyof typeof levelMaps.foreignAcceptance
+    ] ?? 0) *
+      0.3 +
+    (levelMaps.specPreparation[
+      levels.specPreparationLevel as keyof typeof levelMaps.specPreparation
+    ] ?? 0) *
+      0.3;
 
-  const score =
-    jobDemand * weights.jobDemand +
-    foreignAcceptance * weights.foreignAcceptance +
-    specPreparation * weights.specPreparation;
-
-  return Math.round(score * 100); // 퍼센트로 반환 (0~100)
+  return Math.round(jobScore * 100);
 }
 
-// 사용자 이력 기반 이주 추천도
-// 예산 적합도, 동반자 적합도, 한인 커뮤니티 지원, 언어 수준, 비자 유형
-export function calculateMigrationSuitability({
-  languageLevel,
-  visaType,
-  budgetSuitability,
-  familySuitability,
-  communitySupport,
-  employmentProbability,
-}: {
+// 2. 이주 추천도 계산 함수
+export function calculateMigrationSuitability(params: {
   languageLevel: string;
-  visaType: string;
-  budgetSuitability: number;
-  familySuitability: number;
-  communitySupport: number;
-  employmentProbability: number;
+  visaStatus: string;
+  budgetSuitabilityLevel: string;
+  hasCompanion: string;
+  employmentProbability: number; // 0~100 범위
 }): number {
-  const weights = {
-    languageLevel: 0.2, // 언어수준
-    visaType: 0.2, // 비자유형
-    budgetSuitability: 0.2, // 초기예산
-    familySuitability: 0.1, // 동반가족
-    communitySupport: 0.05, // 커뮤니티 지원
-    employmentProbability: 0.25, // 고용 가능성
-  };
+  const langScore =
+    (levelMaps.languageability[
+      params.languageLevel as keyof typeof levelMaps.languageability
+    ] ?? 0) * 0.2;
+  const visaScore =
+    (levelMaps.visaLevel[
+      params.visaStatus as keyof typeof levelMaps.visaLevel
+    ] ?? 0) * 0.2;
+  const budgetScore =
+    (levelMaps.budgetLevel[
+      params.budgetSuitabilityLevel as keyof typeof levelMaps.budgetLevel
+    ] ?? 0) * 0.2;
+  const companionScore =
+    levelMaps.accompanyLevel[
+      params.hasCompanion.toString() as keyof typeof levelMaps.accompanyLevel
+    ] * 0.2;
+  const employmentScore = (params.employmentProbability / 100) * 0.2;
 
-  const levelMap: Record<string, number> = {
-    능숙: 1.0,
-    중간: 0.5,
-    기초: 0.3,
-    불가: 0.0,
-  };
+  const total =
+    langScore + visaScore + budgetScore + companionScore + employmentScore;
 
-  const visaMap: Record<string, number> = {
-    취업비자: 1.0,
-    영주권: 1.0,
-    학생비자: 0.6,
-    무비자: 0.1,
-  };
-
-  const getMappedValue = (map: Record<string, number>, key: string): number =>
-    map[key] !== undefined ? map[key] : 0;
-
-  const score =
-    weights.languageLevel * getMappedValue(levelMap, languageLevel) +
-    weights.visaType * getMappedValue(visaMap, visaType) +
-    weights.budgetSuitability * budgetSuitability +
-    weights.familySuitability * familySuitability +
-    weights.communitySupport * communitySupport +
-    weights.employmentProbability * (employmentProbability / 100);
-
-  return Math.round(score * 100); // 퍼센트 반환
+  return Math.round(total * 100);
 }

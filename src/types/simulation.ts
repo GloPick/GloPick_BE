@@ -9,7 +9,7 @@ export interface SimulationInputWithCity {
   hasLicense: boolean;
   jobPreference: string;
   accommodation: string;
-  withFamily: boolean;
+  withFamily: string;
   visaStatus: string;
   extraWishes?: string;
 }
@@ -46,7 +46,7 @@ export interface MigrationFactors {
   languageLevel: number;
   visaScore: number;
   budgetScore: number;
-  withFamily: boolean;
+  withFamily: string;
   koreanCommunityScore: number;
   employmentProbability: number;
 }

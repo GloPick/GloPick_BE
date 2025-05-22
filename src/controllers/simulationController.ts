@@ -8,6 +8,8 @@ import {
   getCityRecommendations,
 } from "../services/gptsimulationService";
 import { createFlightLinks } from "../utils/flightLinkGenerator";
+import { getJobLevelAssessment } from "../services/gptJobAssessmentService";
+import { getBudgetSuitability } from "../services/gptMigrationAssessmentService";
 import {
   calculateEmploymentProbability,
   calculateMigrationSuitability,
@@ -60,10 +62,7 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
         $all: requiredFacilities,
         $size: requiredFacilities.length,
       },
-      accompanyingFamily: {
-        $all: accompanyingFamily,
-        $size: accompanyingFamily.length,
-      },
+      accompanyingFamily,
       visaStatus: { $all: visaStatus, $size: visaStatus.length },
       departureAirport,
       additionalNotes,
@@ -212,44 +211,6 @@ export const generateAndSaveSimulation = async (
       arrivalAirportCode
     );
 
-    // 취업 가능성 및 이주 추천도 부분 리팩토링 필요!!!!!!!!!!!!!!!!!!!!!!!!!
-    // 취업 가능성
-    const employmentProbability = calculateEmploymentProbability({
-      jobDemand: 0.8,
-      foreignAcceptance: 0.7,
-      specPreparation: 0.9,
-    });
-
-    const totalCost = parseFloat(gptResult.estimatedMonthlyCost?.total || "0");
-    const budgetSuitability =
-      totalCost > 0
-        ? input.budget > totalCost
-          ? 1.0
-          : input.budget === totalCost
-          ? 0.7
-          : 0.3
-        : 0.7;
-
-    const familySuitability =
-      input.accompanyingFamily && input.accompanyingFamily.length > 0
-        ? 1.0
-        : 0.5;
-
-    const communitySupport =
-      gptResult.culturalIntegration?.koreanResourcesLinks?.length > 0
-        ? 1.0
-        : 0.3;
-
-    //이주 추천도
-    const migrationSuitability = calculateMigrationSuitability({
-      languageLevel: input.languageLevel,
-      visaType: input.visaStatus[0],
-      budgetSuitability,
-      familySuitability,
-      communitySupport,
-      employmentProbability,
-    });
-
     const { ...restResult } = gptResult;
 
     const saved = await SimulationResult.create({
@@ -258,8 +219,6 @@ export const generateAndSaveSimulation = async (
       country: input.selectedCountry,
       result: {
         ...restResult,
-        employmentProbability,
-        migrationSuitability,
       },
     });
 
@@ -340,6 +299,70 @@ export const getSimulationFlightLinks = async (
     res.status(500).json({
       code: 500,
       message: "서버 오류",
+      data: null,
+    });
+  }
+};
+
+// 취업 가능성 및 이주 추천도 점수 API
+export const calculateSimulationScores = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { simulationInputId } = req.params;
+
+    const simulationInput = await SimulationInput.findOne({
+      _id: simulationInputId,
+      user: req.user!._id,
+    }).lean();
+
+    if (!simulationInput) {
+      return res.status(404).json({
+        code: 404,
+        message: "시뮬레이션 입력 정보를 찾을 수 없습니다.",
+        data: null,
+      });
+    }
+
+    const UserProfile = (await import("../models/UserProfile")).default;
+    const userProfile = await UserProfile.findById(
+      simulationInput.profile
+    ).lean();
+
+    if (!userProfile) {
+      return res.status(404).json({
+        code: 404,
+        message: "사용자 이력 정보를 찾을 수 없습니다.",
+        data: null,
+      });
+    }
+
+    const jobLevels = await getJobLevelAssessment(userProfile);
+    const migrationAssessment = await getBudgetSuitability(simulationInput);
+
+    const employmentProbability = calculateEmploymentProbability(jobLevels);
+    const migrationSuitability = calculateMigrationSuitability({
+      languageLevel: migrationAssessment.languageability,
+      visaStatus: migrationAssessment.visaLevel,
+      budgetSuitabilityLevel: migrationAssessment.budgetLevel,
+      hasCompanion: migrationAssessment.accompanyLevel ?? "부족함",
+      employmentProbability,
+    });
+
+    res.status(200).json({
+      code: 200,
+      message: "점수 계산 성공",
+      data: {
+        employmentProbability,
+        migrationSuitability,
+      },
+    });
+  } catch (error) {
+    console.error("점수 계산 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "오류 발생",
       data: null,
     });
   }

@@ -289,8 +289,6 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
         simulationId: simObj._id,
         country: simObj.country,
         recommendedCity: result.recommendedCity || null,
-        employmentProbability: result.employmentProbability || 0,
-        migrationSuitability: result.migrationSuitability || 0,
         localInfo: result.localInfo || {},
         initialSetup: result.initialSetup || {},
         jobReality: result.jobReality || {},
@@ -455,8 +453,7 @@ export const getSimulationsByProfileId = async (
         simulationId: obj._id,
         country: obj.country,
         recommendedCity: result.recommendedCity || null,
-        employmentProbability: result.employmentProbability || 0,
-        migrationSuitability: result.migrationSuitability || 0,
+
         localInfo: result.localInfo || {},
         initialSetup: result.initialSetup || {},
         jobReality: result.jobReality || {},

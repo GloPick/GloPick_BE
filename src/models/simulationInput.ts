@@ -19,7 +19,7 @@ const simulationInputSchema = new mongoose.Schema({
   hasLicense: { type: Boolean, required: true }, // 운전면허 여부
   jobTypes: [String], // 희망 취업 형태
   requiredFacilities: [String], // 필수 편의 시설
-  accompanyingFamily: [String], // 동반 가족 여부
+  accompanyingFamily: { type: String }, // 동반 가족 여부
   visaStatus: [String], // 비자 종류 및 상태
   additionalNotes: { type: String }, // 기타 희망사항
   selectedCity: { type: String }, // 선택 도시

@@ -22,15 +22,16 @@ const simulationResultSchema = new mongoose.Schema({
       warnings: String,
     },
     // 한 달 예산 전략
-    // 주거비, 식비, 교통 비, 기타비용, 한 달 총 비용, 1년 비용, 절약 팁
+    // 주거비, 식비, 교통 비, 기타비용, 한 달 총 비용, 1년 비용, 절약 팁, 물가비교
     estimatedMonthlyCost: {
       housing: String,
       food: String,
       transportation: String,
       etc: String,
       total: String,
-      oneYearCost: Number,
+      oneYearCost: String,
       costCuttingTips: String,
+      cpi: String,
     },
 
     // 인근 공항
@@ -50,7 +51,7 @@ const simulationResultSchema = new mongoose.Schema({
       bankAccount: String,
     },
     // 취업 현실 정보
-    // 추천 직종, 구직 플랫폼, 취업 가능성, 언어 조건, 비자 조건
+    // 추천 직종, 구직 플랫폼, 언어 조건, 비자 조건
     jobReality: {
       commonJobs: [String],
       jobSearchPlatforms: [String],
@@ -59,16 +60,12 @@ const simulationResultSchema = new mongoose.Schema({
       visaLimitationTips: String,
     },
     // 문화 적응 도움 정보
-    // 한국인 비율, 외국인 비율, 한식당/한국마트 위치 정보, 다문화 적응 프로그램
-    // (타 국가 비율 평균과 함께) 제공
+    // 한국인 비율, 외국인 비율, 한식당/한국마트 위치 정보
     culturalIntegration: {
       koreanPopulationRate: String,
       foreignResidentRatio: String,
       koreanResourcesLinks: [String],
-      culturalIntegrationPrograms: [String],
     },
-    employmentProbability: { type: Number },
-    migrationSuitability: { type: Number },
   },
 });
 

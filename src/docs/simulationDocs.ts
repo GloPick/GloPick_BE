@@ -50,9 +50,8 @@ export const simulationSwaggerDocs = {
                     example: ["병원", "대중교통"],
                   },
                   accompanyingFamily: {
-                    type: "array",
-                    items: { type: "string" },
-                    example: ["배우자"],
+                    type: "string",
+                    example: "배우자",
                   },
                   visaStatus: {
                     type: "array",

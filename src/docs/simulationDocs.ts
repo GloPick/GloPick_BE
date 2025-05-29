@@ -219,63 +219,166 @@ export const simulationSwaggerDocs = {
                     data: {
                       type: "object",
                       properties: {
-                        simulationResult: {
+                        result: {
                           type: "object",
                           properties: {
-                            country: { type: "string", example: "캐나다" },
-                            result: {
+                            country: { type: "string", example: "미국" },
+                            recommendedCity: {
+                              type: "string",
+                              example: "매디슨",
+                            },
+                            localInfo: {
                               type: "object",
                               properties: {
-                                recommendedCity: {
+                                publicTransport: {
                                   type: "string",
-                                  example: "밴프",
+                                  example:
+                                    "버스가 주요 교통수단입니다. 하지만 운전면허가 있으므로 차량 이용이 가능합니다.",
                                 },
-                                nearestAirport: {
-                                  type: "object",
-                                  properties: {
-                                    name: {
-                                      type: "string",
-                                      example: "Calgary International Airport",
-                                    },
-                                    city: {
-                                      type: "string",
-                                      example: "Calgary",
-                                    },
-                                    code: { type: "string", example: "YYC" },
-                                  },
-                                },
-                                estimatedMonthlyCost: {
-                                  type: "object",
-                                  properties: {
-                                    housing: { type: "string", example: "180" },
-                                    food: { type: "string", example: "30" },
-                                    transportation: {
-                                      type: "string",
-                                      example: "10",
-                                    },
-                                    etc: { type: "string", example: "50" },
-                                    total: { type: "string", example: "270" },
-                                  },
-                                },
-                                jobOpportunity: {
+                                safetyLevel: {
                                   type: "string",
-                                  example: "원격 근무 가능 직종 많음",
+                                  example:
+                                    "대한민국과 비교하여 치안이 좋으나, 항상 주의가 필요합니다.",
+                                },
+                                climateSummary: {
+                                  type: "string",
+                                  example:
+                                    "사계절이 뚜렷하며 겨울에는 매우 추워집니다.",
+                                },
+                                koreanCommunity: {
+                                  type: "string",
+                                  example:
+                                    "한인 마트와 한식당이 몇 군데 있습니다.",
+                                },
+                                essentialFacilities: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  example: [
+                                    "University Hospital",
+                                    "Woodman's Food Market",
+                                    "Chicago Consulate General",
+                                  ],
                                 },
                                 culturalTips: {
                                   type: "string",
-                                  example: "다문화 친화적이며 영어 사용 환경",
+                                  example:
+                                    "현지인들은 친절하며, 다양한 문화를 존중합니다.",
                                 },
                                 warnings: {
                                   type: "string",
-                                  example: "비자 준비 필요",
+                                  example:
+                                    "겨울철 눈길 운전에 주의해야 합니다.",
                                 },
-                                employmentProbability: {
-                                  type: "number",
-                                  example: 82,
+                              },
+                            },
+                            estimatedMonthlyCost: {
+                              type: "object",
+                              properties: {
+                                housing: { type: "string", example: "100만원" },
+                                food: { type: "string", example: "40만원" },
+                                transportation: {
+                                  type: "string",
+                                  example: "20만원",
                                 },
-                                migrationSuitability: {
-                                  type: "number",
-                                  example: 76,
+                                etc: { type: "string", example: "30만원" },
+                                total: { type: "string", example: "190만원" },
+                                oneYearCost: {
+                                  type: "string",
+                                  example: "2280만원",
+                                },
+                                costCuttingTips: {
+                                  type: "string",
+                                  example:
+                                    "대중교통을 이용하거나, 중고 가구를 활용하는 것이 좋습니다.",
+                                },
+                                cpi: {
+                                  type: "string",
+                                  example:
+                                    "대한민국 보다 1.2배 정도 물가가 높은 편입니다.",
+                                },
+                              },
+                            },
+                            nearestAirport: {
+                              type: "object",
+                              properties: {
+                                name: {
+                                  type: "string",
+                                  example: "Dane County Regional Airport",
+                                },
+                                city: { type: "string", example: "매디슨" },
+                                code: { type: "string", example: "MSN" },
+                              },
+                            },
+                            initialSetup: {
+                              type: "object",
+                              properties: {
+                                shortTermHousingOptions: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  example: ["호텔", "호스텔", "에어비앤비"],
+                                },
+                                longTermHousingPlatforms: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  example: ["Zillow", "Apartments.com"],
+                                },
+                                mobilePlan: {
+                                  type: "string",
+                                  example:
+                                    "선불 심카드가 편리합니다 (예: AT&T, T-Mobile)",
+                                },
+                                bankAccount: {
+                                  type: "string",
+                                  example:
+                                    "여권과 주소 증빙만으로 계좌 개설이 가능합니다.",
+                                },
+                              },
+                            },
+                            jobReality: {
+                              type: "object",
+                              properties: {
+                                commonJobs: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  example: [
+                                    "원격 근무가 가능한 IT, 마케팅, 디자인 등의 직종이 추천됩니다.",
+                                  ],
+                                },
+                                jobSearchPlatforms: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  example: ["Indeed", "LinkedIn", "Glassdoor"],
+                                },
+                                languageRequirement: {
+                                  type: "string",
+                                  example: "영어 중급 이상 필수",
+                                },
+                                visaLimitationTips: {
+                                  type: "string",
+                                  example:
+                                    "취업 비자는 고용주 스폰서가 필요합니다.",
+                                },
+                              },
+                            },
+                            culturalIntegration: {
+                              type: "object",
+                              properties: {
+                                koreanPopulationRate: {
+                                  type: "string",
+                                  example:
+                                    "전체 인구의 약 0.5% 이므로 한국인이 많지 않습니다.",
+                                },
+                                foreignResidentRatio: {
+                                  type: "string",
+                                  example: "8.5%",
+                                },
+                                koreanResourcesLinks: {
+                                  type: "array",
+                                  items: { type: "string" },
+                                  example: [
+                                    "https://www.koreanmadison.org",
+                                    "https://www.facebook.com/groups/2204690880",
+                                  ],
                                 },
                               },
                             },
@@ -287,12 +390,12 @@ export const simulationSwaggerDocs = {
                             googleFlights: {
                               type: "string",
                               example:
-                                "https://www.google.com/travel/flights?q=Flights from ICN to YYC/one way",
+                                "https://www.google.com/travel/flights?q=Flights from Incheon%20International%20Airport%20(ICN) to MSN/one way",
                             },
                             skyscanner: {
                               type: "string",
                               example:
-                                "https://www.skyscanner.co.kr/transport/flights/icn/yyc/",
+                                "https://www.skyscanner.co.kr/transport/flights/icn/msn/",
                             },
                           },
                         },

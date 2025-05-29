@@ -6,6 +6,7 @@ import profileRoutes from "./routes/profileRoutes";
 import simulationRoutes from "./routes/simulationRoutes";
 import mypageRoutes from "./routes/mypageRoutes";
 import rankingRoutes from "./routes/rankingRoutes";
+import guestRoutes from "./routes/guestRoutes";
 import { setupSwagger } from "./docs/swagger";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/simulation", simulationRoutes);
 app.use("/api/mypage", mypageRoutes);
 app.use("/api/ranking", rankingRoutes);
+app.use("/api/guest", guestRoutes);
 
 // Swagger 문서
 setupSwagger(app);

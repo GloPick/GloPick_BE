@@ -14,6 +14,39 @@ import {
   calculateEmploymentProbability,
   calculateMigrationSuitability,
 } from "../services/gptCalculation";
+import SimulationList from "../models/simulationList";
+
+// 이 부분을 맨 위에 따로 빼두세요 (같은 파일 안에서만 쓸 거니까 export 안 해도 됨)
+const getSimulationScoreValues = async (
+  simulationInputId: string,
+  userId: string
+) => {
+  const simulationInput = await SimulationInput.findOne({
+    _id: simulationInputId,
+    user: userId,
+  }).lean();
+
+  if (!simulationInput) throw new Error("시뮬레이션 입력 정보 없음");
+
+  const UserProfile = (await import("../models/UserProfile")).default;
+  const userProfile = await UserProfile.findById(
+    simulationInput.profile
+  ).lean();
+  if (!userProfile) throw new Error("사용자 이력 정보 없음");
+
+  const jobLevels = await getJobLevelAssessment(userProfile);
+  const migrationAssessment = await getBudgetSuitability(simulationInput);
+  const employmentProbability = calculateEmploymentProbability(jobLevels);
+  const migrationSuitability = calculateMigrationSuitability({
+    languageLevel: migrationAssessment.languageability,
+    visaStatus: migrationAssessment.visaLevel,
+    budgetSuitabilityLevel: migrationAssessment.budgetLevel,
+    hasCompanion: migrationAssessment.accompanyLevel ?? "부족함",
+    employmentProbability,
+  });
+
+  return { employmentProbability, migrationSuitability };
+};
 
 // 사용자 입력 저장
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
@@ -199,6 +232,29 @@ export const generateAndSaveSimulation = async (
       });
     }
 
+    const existing = await SimulationResult.findOne({
+      input: input._id,
+      user: req.user!._id,
+    });
+
+    if (existing) {
+      return res.status(200).json({
+        code: 200,
+        message: "이미 생성된 시뮬레이션입니다.",
+        data: {
+          simulationId: existing._id,
+          result: {
+            country: existing.country,
+            ...existing.result,
+          },
+          flightLinks: createFlightLinks(
+            input.departureAirport,
+            input.selectedCity ?? input.recommendedCities[0]
+          ),
+        },
+      });
+    }
+
     const selectedCity = input.recommendedCities[selectedCityIndex];
     input.selectedCity = selectedCity;
     await input.save();
@@ -221,6 +277,37 @@ export const generateAndSaveSimulation = async (
         ...restResult,
       },
     });
+
+    const recommendation = await GptRecommendation.findOne({
+      user: req.user!._id,
+      "rankings.country": input.selectedCountry, // 국가 기준으로 찾기
+    });
+
+    const matchedRanking = recommendation?.rankings.find(
+      (r: any) => r.country === input.selectedCountry
+    );
+    const desiredJob = matchedRanking?.job || "미지정";
+    const { migrationSuitability } = await getSimulationScoreValues(
+      input._id.toString(),
+      req.user!._id.toString()
+    );
+
+    const isAlreadyExist = await SimulationList.findOne({
+      user: req.user!._id,
+      job: desiredJob,
+      country: input.selectedCountry,
+      city: selectedCity,
+    });
+
+    if (!isAlreadyExist) {
+      await SimulationList.create({
+        user: req.user!._id,
+        job: desiredJob,
+        country: input.selectedCountry,
+        city: selectedCity,
+        migrationSuitability: migrationSuitability,
+      });
+    }
 
     const simulationId = saved._id;
     const savedObj = saved.toObject();
@@ -311,45 +398,11 @@ export const calculateSimulationScores = async (
 ) => {
   try {
     const { simulationInputId } = req.params;
-
-    const simulationInput = await SimulationInput.findOne({
-      _id: simulationInputId,
-      user: req.user!._id,
-    }).lean();
-
-    if (!simulationInput) {
-      return res.status(404).json({
-        code: 404,
-        message: "시뮬레이션 입력 정보를 찾을 수 없습니다.",
-        data: null,
-      });
-    }
-
-    const UserProfile = (await import("../models/UserProfile")).default;
-    const userProfile = await UserProfile.findById(
-      simulationInput.profile
-    ).lean();
-
-    if (!userProfile) {
-      return res.status(404).json({
-        code: 404,
-        message: "사용자 이력 정보를 찾을 수 없습니다.",
-        data: null,
-      });
-    }
-
-    const jobLevels = await getJobLevelAssessment(userProfile);
-    const migrationAssessment = await getBudgetSuitability(simulationInput);
-
-    const employmentProbability = calculateEmploymentProbability(jobLevels);
-    const migrationSuitability = calculateMigrationSuitability({
-      languageLevel: migrationAssessment.languageability,
-      visaStatus: migrationAssessment.visaLevel,
-      budgetSuitabilityLevel: migrationAssessment.budgetLevel,
-      hasCompanion: migrationAssessment.accompanyLevel ?? "부족함",
-      employmentProbability,
-    });
-
+    const { employmentProbability, migrationSuitability } =
+      await getSimulationScoreValues(
+        simulationInputId,
+        req.user!._id.toString()
+      );
     res.status(200).json({
       code: 200,
       message: "점수 계산 성공",
@@ -364,6 +417,27 @@ export const calculateSimulationScores = async (
       code: 500,
       message: "오류 발생",
       data: null,
+    });
+  }
+};
+
+// 시뮬레이션 요약보기
+export const getSimulationList = async (req: AuthRequest, res: Response) => {
+  try {
+    const simulations = await SimulationList.find({ user: req.user!._id }).sort(
+      { createdAt: -1 }
+    );
+
+    res.status(200).json({
+      code: 200,
+      message: "시뮬레이션 요약 조회 성공",
+      data: simulations,
+    });
+  } catch (error) {
+    console.error("시뮬레이션 요약 조회 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "시뮬레이션 요약 조회 실패",
     });
   }
 };

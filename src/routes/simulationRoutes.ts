@@ -8,6 +8,7 @@ import {
 } from "../controllers/simulationController";
 import { getSimulationFlightLinks } from "../controllers/simulationController";
 import { calculateSimulationScores } from "../controllers/simulationController";
+import { getSimulationList } from "../controllers/simulationController";
 
 const router = express.Router();
 
@@ -36,5 +37,7 @@ router.get(
   protect,
   asyncHandler(calculateSimulationScores)
 );
+// 시뮬레이션 요약 보기
+router.get("/:simulationId", protect, asyncHandler(getSimulationList));
 
 export default router;

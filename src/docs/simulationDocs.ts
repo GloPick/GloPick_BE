@@ -552,5 +552,69 @@ export const simulationSwaggerDocs = {
         },
       },
     },
+
+    "/api/simulation/list": {
+      get: {
+        summary: "시뮬레이션 요약 리스트 조회",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "시뮬레이션 요약 리스트 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: {
+                      type: "integer",
+                      example: 200,
+                    },
+                    message: {
+                      type: "string",
+                      example: "시뮬레이션 요약 리스트 조회 성공",
+                    },
+                    data: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          simulationId: {
+                            type: "string",
+                            example: "663fe59a5230fdd9c41a67af",
+                          },
+                          job: {
+                            type: "string",
+                            example: "한식 요리사",
+                          },
+                          country: {
+                            type: "string",
+                            example: "캐나다",
+                          },
+                          city: {
+                            type: "string",
+                            example: "밴쿠버",
+                          },
+                          migrationSuitability: {
+                            type: "number",
+                            example: 76,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            description: "인증 실패 (토큰 없음 또는 만료)",
+          },
+          500: {
+            description: "서버 오류",
+          },
+        },
+      },
+    },
   },
 };

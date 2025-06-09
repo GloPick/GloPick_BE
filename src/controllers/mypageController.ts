@@ -1,5 +1,5 @@
 import { Response } from "express";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import User from "../models/User";
 import UserProfile from "../models/UserProfile";
 import SimulationInput from "../models/simulationInput";
@@ -45,13 +45,24 @@ export const updateUserInfo = async (req: AuthRequest, res: Response) => {
       .json({ code: 404, message: "사용자를 찾을 수 없음", data: null });
   }
 
+  // 이메일 중복 확인
+  if (email && email !== user.email) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        code: 409,
+        message: "이미 사용 중인 이메일입니다.",
+        data: null,
+      });
+    }
+    user.email = email;
+  }
+
   if (name) user.name = name;
-  if (email) user.email = email;
   if (birth) user.birth = birth;
   if (phone) user.phone = phone;
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+  if (typeof password === "string" && password.trim() !== "") {
+    user.password = password.trim();
   }
 
   await user.save();

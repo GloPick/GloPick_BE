@@ -77,6 +77,8 @@ export const mypageSwaggerDocs = {
                     _id: { type: "string", example: "abc123" },
                     name: { type: "string", example: "newname" },
                     email: { type: "string", example: "newemail@example.com" },
+                    birth: { type: "string", example: "2002-02-02" },
+                    phone: { type: "string", example: "010-1111-2222" },
                   },
                 },
               },

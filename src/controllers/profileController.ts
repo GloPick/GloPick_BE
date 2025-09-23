@@ -15,16 +15,24 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   // 언어 능력 비교 함수
   const compareLanguages = (a: any[], b: any[]) => {
     if (!a || !b || a.length !== b.length) return false;
-    
+
     // null 체크와 language 속성 존재 확인
-    const validA = a.filter(item => item && item.language && typeof item.language === 'string');
-    const validB = b.filter(item => item && item.language && typeof item.language === 'string');
-    
+    const validA = a.filter(
+      (item) => item && item.language && typeof item.language === "string"
+    );
+    const validB = b.filter(
+      (item) => item && item.language && typeof item.language === "string"
+    );
+
     if (validA.length !== validB.length) return false;
-    
-    const sortedA = validA.sort((x, y) => (x.language || '').localeCompare(y.language || ''));
-    const sortedB = validB.sort((x, y) => (x.language || '').localeCompare(y.language || ''));
-    
+
+    const sortedA = validA.sort((x, y) =>
+      (x.language || "").localeCompare(y.language || "")
+    );
+    const sortedB = validB.sort((x, y) =>
+      (x.language || "").localeCompare(y.language || "")
+    );
+
     return sortedA.every(
       (val, i) =>
         val.language === sortedB[i].language && val.level === sortedB[i].level

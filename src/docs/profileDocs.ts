@@ -13,22 +13,30 @@ export const profileSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  education: { type: "string", example: "컴퓨터공학 학사" },
-                  experience: { type: "string", example: "개발 3년" },
-                  skills: {
-                    type: "array",
-                    items: { type: "string" },
-                    example: ["React", "AWS", "정보처리기사"],
-                  },
                   languages: {
                     type: "array",
-                    items: { type: "string" },
-                    example: ["영어", "한국어"],
+                    items: {
+                      type: "object",
+                      properties: {
+                        language: { type: "string", example: "English" },
+                        level: { type: "string", example: "상급" },
+                      },
+                    },
+                    example: [
+                      { language: "English", level: "상급" },
+                      { language: "Korean", level: "원어민" },
+                    ],
                   },
-                  desiredSalary: { type: "number", example: 5000 },
+                  expectedSalary: { type: "string", example: "3천만 ~ 5천만" },
                   desiredJob: {
-                    type: "string",
-                    example: "프론트엔드 개발자",
+                    type: "object",
+                    properties: {
+                      mainCategory: { type: "string", example: "IT / 개발" },
+                      subCategory: {
+                        type: "string",
+                        example: "프론트엔드 개발자",
+                      },
+                    },
                   },
                   additionalNotes: {
                     type: "string",

@@ -1,9 +1,12 @@
 export interface GuestProfile {
-  education: string;
-  experience: string;
-  skills: string[];
-  languages: string[];
+  languages: Array<{
+    language: string;
+    level: string;
+  }>;
   desiredSalary: string;
-  desiredJob: string;
+  desiredJob: {
+    mainCategory: string;
+    subCategory: string;
+  };
   additionalNotes?: string;
 }

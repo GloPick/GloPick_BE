@@ -7,12 +7,7 @@ import { Types } from "mongoose";
 
 // 사용자 이력 등록 (POST /api/profile)
 export const createProfile = async (req: AuthRequest, res: Response) => {
-  const {
-    languages,
-    desiredSalary,
-    desiredJob,
-    additionalNotes,
-  } = req.body;
+  const { languages, desiredSalary, desiredJob, additionalNotes } = req.body;
 
   // 이전 이력과 동일한 내용이면 등록 불가
   const normalize = (value: string) => (value || "").trim().toLowerCase();

@@ -28,7 +28,7 @@ export const profileSwaggerDocs = {
                     ],
                   },
                   expectedSalary: { type: "string", example: "3천만 ~ 5천만" },
-                  desiredJobCategory: {
+                  desiredJob: {
                     type: "object",
                     properties: {
                       mainCategory: { type: "string", example: "IT / 개발" },

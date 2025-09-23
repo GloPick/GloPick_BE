@@ -137,7 +137,7 @@ export const mypageSwaggerDocs = {
                   items: {
                     type: "object",
                     properties: {
-                      languageAbility: {
+                      languages: {
                         type: "array",
                         items: {
                           type: "object",
@@ -151,11 +151,11 @@ export const mypageSwaggerDocs = {
                           { language: "Korean", level: "원어민" },
                         ],
                       },
-                      expectedSalary: {
+                      desiredSalary: {
                         type: "string",
                         example: "3천만 ~ 5천만",
                       },
-                      desiredJobCategory: {
+                      desiredJob: {
                         type: "object",
                         properties: {
                           mainCategory: {
@@ -211,7 +211,7 @@ export const mypageSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  languageAbility: {
+                  languages: {
                     type: "array",
                     items: {
                       type: "object",
@@ -225,8 +225,8 @@ export const mypageSwaggerDocs = {
                       { language: "Korean", level: "원어민" },
                     ],
                   },
-                  expectedSalary: { type: "string", example: "3천만 ~ 5천만" },
-                  desiredJobCategory: {
+                  desiredSalary: { type: "string", example: "3천만 ~ 5천만" },
+                  desiredJob: {
                     type: "object",
                     properties: {
                       mainCategory: { type: "string", example: "IT / 개발" },
@@ -302,7 +302,7 @@ export const mypageSwaggerDocs = {
                       profile: {
                         type: "object",
                         properties: {
-                          languageAbility: {
+                          languages: {
                             type: "array",
                             items: {
                               type: "object",
@@ -319,11 +319,11 @@ export const mypageSwaggerDocs = {
                               { language: "Japanese", level: "중급" },
                             ],
                           },
-                          expectedSalary: {
+                          desiredSalary: {
                             type: "string",
                             example: "3천만 ~ 5천만",
                           },
-                          desiredJobCategory: {
+                          desiredJob: {
                             type: "object",
                             properties: {
                               mainCategory: { type: "string", example: "교육" },
@@ -561,7 +561,7 @@ export const mypageSwaggerDocs = {
                   profile: {
                     type: "object",
                     properties: {
-                      languageAbility: {
+                      languages: {
                         type: "array",
                         items: {
                           type: "object",
@@ -571,8 +571,8 @@ export const mypageSwaggerDocs = {
                           },
                         },
                       },
-                      expectedSalary: { type: "string" },
-                      desiredJobCategory: {
+                      desiredSalary: { type: "string" },
+                      desiredJob: {
                         type: "object",
                         properties: {
                           mainCategory: { type: "string" },

@@ -13,10 +13,18 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   const normalize = (value: string) => (value || "").trim().toLowerCase();
 
   // 언어 능력 비교 함수
-  const compareLanguageAbility = (a: any[], b: any[]) => {
+  const compareLanguages = (a: any[], b: any[]) => {
     if (!a || !b || a.length !== b.length) return false;
-    const sortedA = a.sort((x, y) => x.language.localeCompare(y.language));
-    const sortedB = b.sort((x, y) => x.language.localeCompare(y.language));
+    
+    // null 체크와 language 속성 존재 확인
+    const validA = a.filter(item => item && item.language && typeof item.language === 'string');
+    const validB = b.filter(item => item && item.language && typeof item.language === 'string');
+    
+    if (validA.length !== validB.length) return false;
+    
+    const sortedA = validA.sort((x, y) => (x.language || '').localeCompare(y.language || ''));
+    const sortedB = validB.sort((x, y) => (x.language || '').localeCompare(y.language || ''));
+    
     return sortedA.every(
       (val, i) =>
         val.language === sortedB[i].language && val.level === sortedB[i].level
@@ -34,7 +42,7 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
 
   const isDuplicate = existingProfiles.find((profile) => {
     return (
-      compareLanguageAbility(profile.languages, languages) &&
+      compareLanguages(profile.languages, languages) &&
       profile.desiredSalary === desiredSalary &&
       compareJobCategory(profile.desiredJob, desiredJob) &&
       normalize(profile.additionalNotes || "") ===

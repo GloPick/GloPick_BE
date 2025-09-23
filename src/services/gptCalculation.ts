@@ -7,7 +7,7 @@ const levelMaps = {
     "매우 부족함": 0,
   },
 
-  languageability: {
+  languages: {
     "매우 적합": 1.0,
     적당함: 0.7,
     부족함: 0.5,
@@ -36,8 +36,8 @@ export function calculateMigrationSuitability(params: {
   hasCompanion: string;
 }): number {
   const langScore =
-    (levelMaps.languageability[
-      params.languageLevel as keyof typeof levelMaps.languageability
+    (levelMaps.languages[
+      params.languageLevel as keyof typeof levelMaps.languages
     ] ?? 0) * 0.25;
   const visaScore =
     (levelMaps.visaLevel[

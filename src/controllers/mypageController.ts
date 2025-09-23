@@ -390,9 +390,6 @@ export const getGptRecommendationByProfileId = async (
     const formatted = {
       recommendationId: recObj._id,
       profileId: recObj.profile?._id || null,
-      education: recObj.profile?.education || null,
-      experience: recObj.profile?.experience || null,
-      skills: recObj.profile?.skills || [],
       languages: recObj.profile?.languages || [],
       desiredSalary: recObj.profile?.desiredSalary || null,
       desiredJob: recObj.profile?.desiredJob || null,

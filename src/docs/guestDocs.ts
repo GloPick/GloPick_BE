@@ -12,8 +12,6 @@ export const guestDocs = {
             schema: {
               type: "object",
               properties: {
-                education: { type: "string", example: "컴퓨터공학 학사" },
-                experience: { type: "string", example: "프론트엔드 개발 2년" },
                 skills: {
                   type: "string[]",
                   example: ["React", "JavaScript", "HTML/CSS"],
@@ -29,14 +27,7 @@ export const guestDocs = {
                   example: "원격 근무 선호",
                 },
               },
-              required: [
-                "education",
-                "experience",
-                "skills",
-                "languages",
-                "desiredSalary",
-                "desiredJob",
-              ],
+              required: ["skills", "languages", "desiredSalary", "desiredJob"],
             },
           },
         },

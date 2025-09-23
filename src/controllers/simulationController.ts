@@ -13,13 +13,13 @@ import { calculateMigrationSuitability } from "../services/gptCalculation";
 import SimulationList from "../models/simulationList";
 
 // 언어 능력 평가 함수
-const assessLanguageLevel = (languageAbility: any[]): string => {
-  if (!languageAbility || languageAbility.length === 0) {
+const assessLanguageLevel = (languages: any[]): string => {
+  if (!languages || languages.length === 0) {
     return "부족함";
   }
 
   // 영어 능력을 우선적으로 확인
-  const englishAbility = languageAbility.find(
+  const englishAbility = languages.find(
     (lang) => lang.language === "English"
   );
   if (englishAbility) {
@@ -38,7 +38,7 @@ const assessLanguageLevel = (languageAbility: any[]): string => {
 
   // 영어가 없으면 다른 언어 중 가장 높은 수준으로 평가
   const maxLevel = Math.max(
-    ...languageAbility.map((lang) => {
+    ...languages.map((lang) => {
       switch (lang.level) {
         case "원어민":
           return 4;

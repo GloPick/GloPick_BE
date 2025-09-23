@@ -48,10 +48,8 @@ export interface MigrationFactors {
   budgetScore: number;
   withFamily: string;
   koreanCommunityScore: number;
-  employmentProbability: number;
 }
 
 export type SimulationResult = CitySimulation & {
-  employmentProbability: number;
   migrationSuitability: number;
 };

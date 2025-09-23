@@ -9,7 +9,6 @@ export const getCityRecommendations = async (input: any) => {
     selectedCountry,
     budget,
     duration,
-    languageLevel,
     hasLicense,
     jobTypes,
     requiredFacilities,
@@ -24,14 +23,15 @@ export const getCityRecommendations = async (input: any) => {
 아래 조건을 바탕으로 ${selectedCountry} 내에서 이주 정착하기 좋은 도시 3곳을 추천해주세요. 각 도시에 대해 요약된 특징을 함께 제공하세요.
 
 조건:
-- 예산: ${budget}만원
+- 예산: ${budget}
 - 거주 기간: ${duration}
-- 언어 능력: ${languageLevel}
 - 운전면허: ${hasLicense ? "보유" : "없음"}
 - 취업 형태: ${jobTypes.join(", ")}
 - 필수 편의시설: ${requiredFacilities.join(", ")}
-- 동반 가족: ${accompanyingFamily}
-- 비자 상태: ${visaStatus.join(", ")}
+- 동반 가족: 배우자 ${accompanyingFamily.spouse}명, 자녀 ${
+    accompanyingFamily.children
+  }명, 부모 ${accompanyingFamily.parents}명
+- 비자 상태: ${visaStatus}
 - 기타: ${additionalNotes || "없음"}
 
 ⚠️ 아래 JSON 형식 그대로만 한글로 응답하세요:
@@ -74,7 +74,6 @@ export const generateSimulationResponse = async (input: any) => {
     selectedCity,
     budget,
     duration,
-    languageLevel,
     hasLicense,
     jobTypes,
     requiredFacilities,
@@ -83,17 +82,24 @@ export const generateSimulationResponse = async (input: any) => {
     additionalNotes,
   } = input;
 
+  const accompanyingFamilyText = `${
+    accompanyingFamily.hasFamily ? "있음" : "없음"
+  }${
+    accompanyingFamily.hasFamily && accompanyingFamily.familyComposition
+      ? ` (${accompanyingFamily.familyComposition})`
+      : ""
+  }`;
+
   const prompt = `
 사용자 조건:
 - 도시: ${selectedCity}
-- 예산: ${budget}만원
+- 예산: ${budget}
 - 기간: ${duration}
 - 운전면허: ${hasLicense ? "보유" : "없음"}
 - 취업 형태: ${jobTypes.join(", ")}
 - 필수 편의시설: ${requiredFacilities.join(", ")}
-- 언어 능력: ${languageLevel}
-- 비자 상태: ${visaStatus.join(", ")}
-- 동반 가족: ${accompanyingFamily}
+- 비자 상태: ${visaStatus}
+- 동반 가족: ${accompanyingFamilyText}
 - 기타: ${additionalNotes || "없음"}
 
 아래 항목을 포함하여 현실적인 시뮬레이션을 JSON 형식으로 응답하세요:

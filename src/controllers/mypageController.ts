@@ -130,9 +130,6 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
           email: profileObj.user?.email || null,
         },
 
-        education: profileObj.education,
-        experience: profileObj.experience,
-        skills: profileObj.skills,
         languages: profileObj.languages,
         desiredSalary: profileObj.desiredSalary,
         desiredJob: profileObj.desiredJob,
@@ -162,9 +159,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   }
 
   const fields = [
-    "education",
-    "experience",
-    "skills",
     "languages",
     "desiredSalary",
     "desiredJob",
@@ -180,9 +174,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   const profileObj = profile.toObject();
   const responseData = {
     profileId: profileObj._id,
-    education: profileObj.education,
-    experience: profileObj.experience,
-    skills: profileObj.skills,
     languages: profileObj.languages,
     desiredSalary: profileObj.desiredSalary,
     desiredJob: profileObj.desiredJob,
@@ -251,9 +242,6 @@ export const getGptRecommendations = async (
       return {
         recommendationId: obj._id,
         profile: {
-          education: obj.profile?.education || null,
-          experience: obj.profile?.experience || null,
-          skills: obj.profile?.skills || [],
           languages: obj.profile?.languages || [],
           desiredSalary: obj.profile?.desiredSalary || null,
           desiredJob: obj.profile?.desiredJob || null,
@@ -344,7 +332,6 @@ export const getUserSimulationInputs = async (
         selectedCountry: obj.selectedCountry,
         budget: obj.budget,
         duration: obj.duration,
-        languageLevel: obj.languageLevel,
         hasLicense: obj.hasLicense,
         jobTypes: obj.jobTypes,
         requiredFacilities: obj.requiredFacilities,

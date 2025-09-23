@@ -30,41 +30,116 @@ export const simulationSwaggerDocs = {
                 type: "object",
                 properties: {
                   selectedRankIndex: { type: "integer", example: 0 },
-
-                  budget: { type: "number", example: 3000 },
-                  duration: { type: "string", example: "1년" },
-                  languageLevel: {
+                  selectedCountry: { type: "string", example: "Canada" },
+                  budget: {
                     type: "string",
-                    enum: ["능숙", "기초", "통역 필요"],
-                    example: "기초",
+                    enum: [
+                      "300만~500만원",
+                      "500만~800만원",
+                      "800만~1200만원",
+                      "1200만~1500만원",
+                      "1500만원 이상",
+                    ],
+                    example: "500만~800만원",
+                  },
+                  duration: {
+                    type: "string",
+                    enum: [
+                      "1년 미만",
+                      "1~2년",
+                      "3~4년",
+                      "5~10년",
+                      "10년 이상",
+                      "평생 거주",
+                    ],
+                    example: "1~2년",
                   },
                   hasLicense: { type: "boolean", example: true },
                   jobTypes: {
                     type: "array",
-                    items: { type: "string" },
-                    example: ["원격 근무"],
+                    items: {
+                      type: "string",
+                      enum: [
+                        "정규직",
+                        "아르바이트",
+                        "창업/자영업",
+                        "프리랜서",
+                        "기타",
+                      ],
+                    },
+                    example: ["정규직", "프리랜서"],
                   },
                   requiredFacilities: {
                     type: "array",
-                    items: { type: "string" },
-                    example: ["병원", "대중교통"],
+                    items: {
+                      type: "string",
+                      enum: [
+                        "대중교통 접근성",
+                        "마트/슈퍼 근접성",
+                        "병원/약국 접근성",
+                        "유치원/학교 접근성",
+                        "반려동물 친화",
+                        "공원/자연환경",
+                        "피트니스/헬스장",
+                        "카페/문화 시설",
+                        "치안",
+                      ],
+                    },
+                    example: ["대중교통 접근성", "병원/약국 접근성"],
                   },
                   accompanyingFamily: {
-                    type: "string",
-                    example: "배우자",
+                    type: "object",
+                    properties: {
+                      spouse: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 1,
+                        example: 1,
+                      },
+                      children: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 10,
+                        example: 2,
+                      },
+                      parents: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 2,
+                        example: 0,
+                      },
+                    },
                   },
                   visaStatus: {
-                    type: "array",
-                    items: { type: "string" },
-                    example: ["취업 비자"],
-                  },
-                  departureAirport: {
                     type: "string",
-                    example: "ICN",
+                    enum: ["있음", "없음"],
+                    example: "없음",
                   },
                   additionalNotes: {
                     type: "string",
                     example: "추운 나라 희망",
+                  },
+                  selectedCity: {
+                    type: "string",
+                    example: "Vancouver",
+                  },
+                  recommendedCities: {
+                    type: "array",
+                    items: { type: "string" },
+                    example: ["Vancouver", "Toronto", "Montreal"],
+                  },
+                  departureAirport: {
+                    type: "string",
+                    enum: [
+                      "인천국제공항",
+                      "김포국제공항",
+                      "김해국제공항",
+                      "제주국제공항",
+                      "청주국제공항",
+                      "대구국제공항",
+                      "무안국제공항",
+                    ],
+                    example: "인천국제공항",
                   },
                 },
               },
@@ -452,7 +527,7 @@ export const simulationSwaggerDocs = {
                             _id: { type: "string", example: "6632abc123..." },
                             departureAirport: {
                               type: "string",
-                              example: "ICN",
+                              example: "인천국제공항",
                             },
                             selectedCity: {
                               type: "string",
@@ -528,10 +603,6 @@ export const simulationSwaggerDocs = {
                     data: {
                       type: "object",
                       properties: {
-                        employmentProbability: {
-                          type: "integer",
-                          example: 82,
-                        },
                         migrationSuitability: {
                           type: "integer",
                           example: 74,

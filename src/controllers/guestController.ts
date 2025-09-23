@@ -8,20 +8,9 @@ export const recommendCountriesForGuest = async (
   res: Response
 ) => {
   try {
-    const {
-      education,
-      experience,
-      skills,
-      languages,
-      desiredSalary,
-      desiredJob,
-      additionalNotes,
-    } = req.body;
+    const { languages, desiredSalary, desiredJob, additionalNotes } = req.body;
 
     const guestProfile: GuestProfile = {
-      education,
-      experience,
-      skills,
       languages,
       desiredSalary,
       desiredJob,

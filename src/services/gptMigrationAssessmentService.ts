@@ -1,28 +1,29 @@
 import axios from "axios";
 const GPT_API_URL = process.env.GPT_API_URL as string;
-const API_KEY = process.env.API_KEY; // 환경변수 파일에 설정했다고 가정
+const API_KEY = process.env.API_KEY;
 
 // 프롬프트 생성
 function getMigrationAssessmentPrompt(input: any): string {
-  const {
-    selectedCountry,
-    budget,
-    duration,
-    languageLevel,
-    accompanyingFamily,
-    visaStatus,
-  } = input;
+  const { selectedCountry, budget, duration, accompanyingFamily, visaStatus } =
+    input;
+
+  const accompanyingFamilyText = `${
+    accompanyingFamily.hasFamily ? "있음" : "없음"
+  }${
+    accompanyingFamily.hasFamily && accompanyingFamily.familyComposition
+      ? ` (${accompanyingFamily.familyComposition})`
+      : ""
+  }`;
 
   return `
 당신은 이주 컨설턴트입니다. 아래 조건을 참고하여 예산이 해당 국가에서 생활에 적절한지를 판단해 주세요.
 
 조건:
 - 국가: ${selectedCountry}
-- 예산: ${budget}만원
+- 예산: ${budget}
 - 거주 기간: ${duration}
-- 언어 능력: ${languageLevel}
-- 동반 가족: ${accompanyingFamily}
-- 비자 상태: ${visaStatus.join(", ")}
+- 동반 가족: ${accompanyingFamilyText}
+- 비자 상태: ${visaStatus}
 
 다음 중 하나의 값으로 평가:
 "매우 적합", "적당함", "부족함", "매우 부족함"
@@ -35,9 +36,8 @@ function getMigrationAssessmentPrompt(input: any): string {
 응답 형식 (JSON):
 {
   "budgetLevel": "적당함",
-  "languageability": "매우 적합",
   "accompanyLevel": "적당함",
-  "visaLevel": "매우 부족함",
+  "visaLevel": "매우 부족함"
 }
 `;
 }
@@ -45,7 +45,6 @@ function getMigrationAssessmentPrompt(input: any): string {
 // GPT 호출 함수
 export async function getBudgetSuitability(input: any): Promise<{
   budgetLevel: string;
-  languageability: string;
   accompanyLevel: string;
   visaLevel: string;
 }> {

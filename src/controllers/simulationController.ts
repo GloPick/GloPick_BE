@@ -8,15 +8,58 @@ import {
   getCityRecommendations,
 } from "../services/gptsimulationService";
 import { createFlightLinks } from "../utils/flightLinkGenerator";
-import { getJobLevelAssessment } from "../services/gptJobAssessmentService";
 import { getBudgetSuitability } from "../services/gptMigrationAssessmentService";
-import {
-  calculateEmploymentProbability,
-  calculateMigrationSuitability,
-} from "../services/gptCalculation";
+import { calculateMigrationSuitability } from "../services/gptCalculation";
 import SimulationList from "../models/simulationList";
 
-// 이 부분을 맨 위에 따로 빼두세요 (같은 파일 안에서만 쓸 거니까 export 안 해도 됨)
+// 언어 능력 평가 함수
+const assessLanguageLevel = (languageAbility: any[]): string => {
+  if (!languageAbility || languageAbility.length === 0) {
+    return "부족함";
+  }
+
+  // 영어 능력을 우선적으로 확인
+  const englishAbility = languageAbility.find(
+    (lang) => lang.language === "English"
+  );
+  if (englishAbility) {
+    switch (englishAbility.level) {
+      case "원어민":
+      case "상급":
+        return "우수함";
+      case "중급":
+        return "보통";
+      case "초급":
+        return "부족함";
+      default:
+        return "부족함";
+    }
+  }
+
+  // 영어가 없으면 다른 언어 중 가장 높은 수준으로 평가
+  const maxLevel = Math.max(
+    ...languageAbility.map((lang) => {
+      switch (lang.level) {
+        case "원어민":
+          return 4;
+        case "상급":
+          return 3;
+        case "중급":
+          return 2;
+        case "초급":
+          return 1;
+        default:
+          return 0;
+      }
+    })
+  );
+
+  if (maxLevel >= 3) return "우수함";
+  if (maxLevel >= 2) return "보통";
+  return "부족함";
+};
+
+// 시뮬레이션 점수 계산
 const getSimulationScoreValues = async (
   simulationInputId: string,
   userId: string
@@ -34,18 +77,19 @@ const getSimulationScoreValues = async (
   ).lean();
   if (!userProfile) throw new Error("사용자 이력 정보 없음");
 
-  const jobLevels = await getJobLevelAssessment(userProfile);
   const migrationAssessment = await getBudgetSuitability(simulationInput);
-  const employmentProbability = calculateEmploymentProbability(jobLevels);
+
+  // UserProfile에서 언어 능력 가져옴
+  const languageAssessment = assessLanguageLevel(userProfile.languages);
+
   const migrationSuitability = calculateMigrationSuitability({
-    languageLevel: migrationAssessment.languageability,
+    languageLevel: languageAssessment,
     visaStatus: migrationAssessment.visaLevel,
     budgetSuitabilityLevel: migrationAssessment.budgetLevel,
     hasCompanion: migrationAssessment.accompanyLevel ?? "부족함",
-    employmentProbability,
   });
 
-  return { employmentProbability, migrationSuitability };
+  return { migrationSuitability };
 };
 
 // 사용자 입력 저장
@@ -56,7 +100,6 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       selectedRankIndex,
       budget,
       duration,
-      languageLevel,
       hasLicense,
       jobTypes,
       requiredFacilities,
@@ -88,15 +131,11 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       selectedCountry,
       budget,
       duration,
-      languageLevel,
       hasLicense,
-      jobTypes: { $all: jobTypes, $size: jobTypes.length },
-      requiredFacilities: {
-        $all: requiredFacilities,
-        $size: requiredFacilities.length,
-      },
+      jobTypes: { $all: jobTypes },
+      requiredFacilities: { $all: requiredFacilities },
       accompanyingFamily,
-      visaStatus: { $all: visaStatus, $size: visaStatus.length },
+      visaStatus,
       departureAirport,
       additionalNotes,
     });
@@ -117,7 +156,6 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       selectedCountry,
       budget,
       duration,
-      languageLevel,
       hasLicense,
       jobTypes,
       requiredFacilities,
@@ -137,7 +175,6 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
         selectedCountry,
         budget,
         duration,
-        languageLevel,
         hasLicense,
         jobTypes,
         requiredFacilities,
@@ -398,16 +435,14 @@ export const calculateSimulationScores = async (
 ) => {
   try {
     const { simulationInputId } = req.params;
-    const { employmentProbability, migrationSuitability } =
-      await getSimulationScoreValues(
-        simulationInputId,
-        req.user!._id.toString()
-      );
+    const { migrationSuitability } = await getSimulationScoreValues(
+      simulationInputId,
+      req.user!._id.toString()
+    );
     res.status(200).json({
       code: 200,
       message: "점수 계산 성공",
       data: {
-        employmentProbability,
         migrationSuitability,
       },
     });

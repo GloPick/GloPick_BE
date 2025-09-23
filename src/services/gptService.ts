@@ -3,29 +3,29 @@ const GPT_API_URL = process.env.GPT_API_URL as string;
 const API_KEY = process.env.API_KEY;
 // 사용자의 이력 정보를 기반으로 GPT 프롬프트를 조합
 const createPrompt = (userData: any) => {
-  const {
-    education,
-    experience,
-    skills,
-    languages,
-    desiredSalary,
-    desiredJob,
-    additionalNotes,
-  } = userData;
+  const { languages, desiredSalary, desiredJob, additionalNotes } = userData;
 
-  const educationSentence = `사용자는 ${education}을(를) 보유하고 있습니다.`;
-  const experienceSentence = `경험은 ${experience}입니다.`;
-  const skillsSentence = `기술 스택은 ${skills.join(", ")}입니다.`;
-  const languagesSentence = `언어는 ${languages.join(
-    ", "
-  )}을(를) 구사할 수 있습니다.`;
-  const salarySentence = `희망 연봉은 ${desiredSalary}만원입니다.`;
-  const jobSentence = `희망 직업은 ${desiredJob}입니다.`;
+  // 언어 능력을 문자열로 변환
+  const languagesString =
+    languages
+      ?.map((lang: any) => `${lang.language}(${lang.level})`)
+      .join(", ") || "없음";
+  const languagesSentence = `언어는 ${languagesString}을(를) 구사할 수 있습니다.`;
+
+  const salarySentence = `희망 연봉은 ${desiredSalary}입니다.`;
+
+  // 직무 카테고리를 문자열로 변환
+  const jobString =
+    desiredJob?.mainCategory && desiredJob?.subCategory
+      ? `${desiredJob.mainCategory} - ${desiredJob.subCategory}`
+      : "명시되지 않음";
+  const jobSentence = `희망 직업은 ${jobString}입니다.`;
+
   const additionalNotesSentence = additionalNotes
     ? `추가 희망사항: ${additionalNotes}`
     : "";
 
-  const prompt = `${educationSentence} ${experienceSentence} ${skillsSentence} ${languagesSentence} ${salarySentence} ${jobSentence} ${additionalNotesSentence}`;
+  const prompt = `${languagesSentence} ${salarySentence} ${jobSentence} ${additionalNotesSentence}`;
 
   return prompt;
 };
@@ -78,7 +78,7 @@ export const getGPTResponse = async (profile: any) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${API_KEY}`, // API 키를 Authorization 헤더에 포함
+          Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
       }

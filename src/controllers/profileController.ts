@@ -8,9 +8,6 @@ import { Types } from "mongoose";
 // 사용자 이력 등록 (POST /api/profile)
 export const createProfile = async (req: AuthRequest, res: Response) => {
   const {
-    education,
-    experience,
-    skills,
     languages,
     desiredSalary,
     desiredJob,
@@ -20,26 +17,31 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   // 이전 이력과 동일한 내용이면 등록 불가
   const normalize = (value: string) => (value || "").trim().toLowerCase();
 
-  const normalizeArray = (arr: string[] = []) => arr.map(normalize).sort();
-
-  const arraysEqual = (a: string[], b: string[]) => {
+  // 언어 능력 비교 함수
+  const compareLanguageAbility = (a: any[], b: any[]) => {
     if (!a || !b || a.length !== b.length) return false;
-    return a.every((val, i) => val === b[i]);
+    const sortedA = a.sort((x, y) => x.language.localeCompare(y.language));
+    const sortedB = b.sort((x, y) => x.language.localeCompare(y.language));
+    return sortedA.every(
+      (val, i) =>
+        val.language === sortedB[i].language && val.level === sortedB[i].level
+    );
+  };
+
+  // 직무 카테고리 비교 함수
+  const compareJobCategory = (a: any, b: any) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return a.mainCategory === b.mainCategory && a.subCategory === b.subCategory;
   };
 
   const existingProfiles = await UserProfile.find({ user: req.user!._id });
 
   const isDuplicate = existingProfiles.find((profile) => {
     return (
-      normalize(profile.education) === normalize(education) &&
-      normalize(profile.experience) === normalize(experience) &&
-      arraysEqual(normalizeArray(profile.skills), normalizeArray(skills)) &&
-      arraysEqual(
-        normalizeArray(profile.languages),
-        normalizeArray(languages)
-      ) &&
-      Number(profile.desiredSalary) === Number(desiredSalary) &&
-      normalize(profile.desiredJob || "") === normalize(desiredJob || "") &&
+      compareLanguageAbility(profile.languages, languages) &&
+      profile.desiredSalary === desiredSalary &&
+      compareJobCategory(profile.desiredJob, desiredJob) &&
       normalize(profile.additionalNotes || "") ===
         normalize(additionalNotes || "")
     );
@@ -57,9 +59,6 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
 
   const profile = await UserProfile.create({
     user: req.user!._id,
-    education,
-    experience,
-    skills,
     languages,
     desiredSalary,
     desiredJob,

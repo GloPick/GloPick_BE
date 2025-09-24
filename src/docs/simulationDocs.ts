@@ -570,59 +570,6 @@ export const simulationSwaggerDocs = {
         },
       },
     },
-    "/api/simulation/scores/{simulationInputId}": {
-      get: {
-        summary: "취업 가능성과 이주 추천도 계산",
-        tags: ["Simulation"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "simulationInputId",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "SimulationInput ID (MongoDB ObjectId)",
-          },
-        ],
-        responses: {
-          200: {
-            description: "점수 계산 성공",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    code: {
-                      type: "integer",
-                      example: 200,
-                    },
-                    message: {
-                      type: "string",
-                      example: "점수 계산 성공",
-                    },
-                    data: {
-                      type: "object",
-                      properties: {
-                        migrationSuitability: {
-                          type: "integer",
-                          example: 74,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          404: {
-            description: "입력 정보 또는 사용자 이력 정보 없음",
-          },
-          500: {
-            description: "서버 오류",
-          },
-        },
-      },
-    },
 
     "/api/simulation/list": {
       get: {

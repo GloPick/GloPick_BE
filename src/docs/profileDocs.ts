@@ -4,6 +4,8 @@ export const profileSwaggerDocs = {
     "/api/profile": {
       post: {
         summary: "사용자 이력 등록",
+        description:
+          "사용자의 언어 능력, 희망 연봉, 직무, 추가 메모 등을 등록합니다. 동일한 내용의 이력은 중복 등록이 불가합니다.",
         tags: ["Profile"],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -13,21 +15,34 @@ export const profileSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  languages: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        language: { type: "string", example: "English" },
-                        level: { type: "string", example: "상급" },
-                      },
-                    },
-                    example: [
-                      { language: "English", level: "상급" },
-                      { language: "Korean", level: "원어민" },
+                  language: {
+                    type: "string",
+                    enum: [
+                      "English",
+                      "Japanese",
+                      "Chinese",
+                      "German",
+                      "French",
+                      "Spanish",
+                      "Korean",
+                      "Other",
                     ],
+                    description: "사용 가능한 언어 (단일 선택)",
+                    example: "English",
                   },
-                  expectedSalary: { type: "string", example: "3천만 ~ 5천만" },
+                  desiredSalary: {
+                    type: "string",
+                    enum: [
+                      "2천만 이하",
+                      "2천만 ~ 3천만",
+                      "3천만 ~ 5천만",
+                      "5천만 ~ 7천만",
+                      "7천만 ~ 1억",
+                      "1억 이상",
+                      "기타 (직접 입력)",
+                    ],
+                    example: "3천만 ~ 5천만",
+                  },
                   desiredJob: {
                     type: "object",
                     properties: {
@@ -43,100 +58,46 @@ export const profileSwaggerDocs = {
                     example: "원격 근무 원함",
                   },
                 },
+                required: ["language", "desiredSalary", "desiredJob"],
               },
             },
           },
         },
         responses: {
-          201: { description: "이력 등록 성공" },
-          401: { description: "인증 실패" },
-        },
-      },
-    },
-
-    "/api/profile/{id}/gpt": {
-      post: {
-        summary: "사용자 이력을 기반으로 GPT 응답 생성",
-        description:
-          "사용자의 이력 정보(학력, 경험, 기술 스택 등)를 GPT API로 전송하고 응답을 받습니다.",
-        tags: ["Profile"],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "profileId",
-          },
-        ],
-        security: [
-          {
-            bearerAuth: [],
-          },
-        ],
-        responses: {
-          200: {
-            description: "GPT 응답 생성 성공",
+          201: {
+            description: "이력 등록 성공",
             content: {
               "application/json": {
                 schema: {
                   type: "object",
                   properties: {
-                    rankings: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          country: { type: "string", example: "캐나다" },
-                          job: { type: "string", example: "프론트엔드 개발자" },
-                          reason: {
-                            type: "string",
-                            example:
-                              "React와 AWS에 대한 경험이 북미 시장에서 높은 수요를 보입니다.",
-                          },
-                        },
-                      },
+                    code: { type: "number", example: 201 },
+                    message: {
+                      type: "string",
+                      example: "이력이 정상적으로 등록되었습니다.",
                     },
-                  },
-                  example: {
-                    rankings: [
-                      {
-                        country: "미국",
-                        job: "프론트엔드 개발자",
-                        reason:
-                          "프론트엔드 개발에 대한 수요가 높고, 연봉이 높음",
-                      },
-                      {
-                        country: "캐나다",
-                        job: "프론트엔드 개발자",
-                        reason: "IT 산업이 발달하며 원격 근무 기회가 많음",
-                      },
-                      {
-                        country: "호주",
-                        job: "프론트엔드 개발자",
-                        reason: "영어권 국가로서 원격 근무 가능한 기업이 많음",
-                      },
-                    ],
+                    data: { type: "null", example: null },
                   },
                 },
               },
             },
           },
-
           400: {
-            description: "이미 추천된 이력입니다.",
+            description: "중복된 이력 등록 시도",
             content: {
               "application/json": {
                 schema: {
                   type: "object",
                   properties: {
+                    code: { type: "number", example: 400 },
+                    message: {
+                      type: "string",
+                      example:
+                        "이전 이력과 내용이 동일합니다. 등록이 불가합니다.",
+                    },
                     data: {
                       type: "object",
                       properties: {
-                        recommendationId: {
-                          type: "string",
-                          example: "663fa12345abcd...",
-                        },
                         profileId: {
                           type: "string",
                           example: "681f6035615bf...",
@@ -148,15 +109,19 @@ export const profileSwaggerDocs = {
               },
             },
           },
-
           401: {
             description: "인증 실패",
-          },
-          404: {
-            description: "사용자 이력 없음",
-          },
-          500: {
-            description: "GPT 호출 실패",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: { type: "number", example: 401 },
+                    message: { type: "string", example: "인증이 필요합니다." },
+                  },
+                },
+              },
+            },
           },
         },
       },

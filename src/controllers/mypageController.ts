@@ -3,9 +3,9 @@ import bcrypt from "bcrypt";
 import User from "../models/User";
 import UserProfile from "../models/UserProfile";
 import SimulationInput from "../models/simulationInput";
-import GptRecommendation from "../models/gptRecommendation";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import SimulationResult from "../models/simulationResult";
+import CountryRecommendationResult from "../models/countryRecommendationResult";
 
 // 사용자 정보 조회 API
 export const getUserInfo = async (req: AuthRequest, res: Response) => {
@@ -112,37 +112,28 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       .status(404)
       .json({ code: 404, message: "이력 정보가 없습니다.", data: null });
   }
-  // 각 이력에 대한 GPT 추천 결과 id 찾기
-  const resultsWithResponseId = await Promise.all(
-    profiles.map(async (profile) => {
-      const recommendation = await GptRecommendation.findOne({
-        profile: profile._id,
-      }).select("_id");
+  // 각 이력 정보를 포맷팅
+  const formattedProfiles = profiles.map((profile) => {
+    const profileObj = profile.toObject() as any;
 
-      const profileObj = profile.toObject() as any;
-      const user = profileObj.user;
-
-      return {
-        profileId: profileObj._id,
-        user: {
-          userId: profileObj.user?._id || null,
-          name: profileObj.user?.name || null,
-          email: profileObj.user?.email || null,
-        },
-
-        languages: profileObj.languages,
-        desiredSalary: profileObj.desiredSalary,
-        desiredJob: profileObj.desiredJob,
-        additionalNotes: profileObj.additionalNotes,
-        responseId: recommendation?._id || null,
-      };
-    })
-  );
+    return {
+      profileId: profileObj._id,
+      user: {
+        userId: profileObj.user?._id || null,
+        name: profileObj.user?.name || null,
+        email: profileObj.user?.email || null,
+      },
+      languages: profileObj.language, // 단일 언어로 변경
+      desiredSalary: profileObj.desiredSalary,
+      desiredJob: profileObj.desiredJob,
+      additionalNotes: profileObj.additionalNotes,
+    };
+  });
 
   res.status(200).json({
     code: 200,
     message: "이력 정보 조회 성공",
-    data: resultsWithResponseId,
+    data: formattedProfiles,
   });
 };
 // 사용자 이력 수정 API
@@ -159,7 +150,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   }
 
   const fields = [
-    "languages",
+    "language", // 변경된 필드명
     "desiredSalary",
     "desiredJob",
     "additionalNotes",
@@ -174,7 +165,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   const profileObj = profile.toObject();
   const responseData = {
     profileId: profileObj._id,
-    languages: profileObj.languages,
+    languages: profileObj.language, // 변경된 필드명
     desiredSalary: profileObj.desiredSalary,
     desiredJob: profileObj.desiredJob,
     additionalNotes: profileObj.additionalNotes,
@@ -199,9 +190,6 @@ export const deleteProfile = async (req: AuthRequest, res: Response) => {
       .status(404)
       .json({ code: 404, message: "이력을 찾을 수 없습니다.", data: null });
   }
-  // 관련 GPT 추천 삭제
-  const recommendations = await GptRecommendation.find({ profile: profileId });
-  await GptRecommendation.deleteMany({ profile: profileId });
 
   // 관련 SimulationInput 삭제
   const inputs = await SimulationInput.find({ profile: profileId });
@@ -216,53 +204,6 @@ export const deleteProfile = async (req: AuthRequest, res: Response) => {
     message: "이력 삭제 완료",
     data: null,
   });
-};
-
-// GPT 추천 결과 조회 API
-export const getGptRecommendations = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const results = await GptRecommendation.find({ user: req.user!._id })
-      .populate("profile", "-__v")
-      .sort({ createdAt: -1 });
-
-    if (!results || results.length === 0) {
-      return res.status(404).json({
-        code: 404,
-        message: "저장된 추천 결과가 없습니다.",
-        data: null,
-      });
-    }
-
-    const formattedResults = results.map((result) => {
-      const obj = result.toObject() as any;
-
-      return {
-        recommendationId: obj._id,
-        profile: {
-          languages: obj.profile?.languages || [],
-          desiredSalary: obj.profile?.desiredSalary || null,
-          desiredJob: obj.profile?.desiredJob || null,
-          additionalNotes: obj.profile?.additionalNotes || null,
-        },
-        rankings: (obj.rankings || []).map((r: any) => ({
-          country: r.country,
-          job: r.job,
-          reason: r.reason,
-        })),
-      };
-    });
-
-    res.status(200).json({
-      code: 200,
-      message: "추천 결과 조회 성공",
-      data: formattedResults,
-    });
-  } catch (error) {
-    res.status(500).json({ code: 500, message: "조회 실패", data: null });
-  }
 };
 
 // 시뮬레이션 결과 조회 API
@@ -302,7 +243,130 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error("시뮬레이션 결과 조회 실패:", error);
-    res.status(500).json({ code: 500, message: "서버 오류", data: null });
+    res.status(500).json({
+      code: 500,
+      message: "서버 오류",
+      data: null,
+    });
+  }
+};
+
+// API 기반 국가 추천 결과 목록 조회 API
+export const getUserRecommendations = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const recommendations = await CountryRecommendationResult.find({
+      user: req.user!._id,
+    })
+      .populate("profile", "language desiredSalary desiredJob additionalNotes")
+      .sort({ createdAt: -1 });
+
+    if (!recommendations || recommendations.length === 0) {
+      return res.status(404).json({
+        code: 404,
+        message: "저장된 추천 결과가 없습니다.",
+        data: null,
+      });
+    }
+
+    const formattedRecommendations = recommendations.map((rec) => {
+      const recObj = rec.toObject();
+      const profile = recObj.profile as any; // populate된 데이터 타입 캐스팅
+      return {
+        _id: recObj._id,
+        profile: {
+          language: profile?.language || null,
+          desiredSalary: profile?.desiredSalary || null,
+          desiredJob: profile?.desiredJob || null,
+          additionalNotes: profile?.additionalNotes || null,
+        },
+        recommendations: recObj.recommendations.map((country: any) => ({
+          country: country.country,
+          score: country.score,
+          rank: country.rank,
+          details: country.details,
+          economicData: country.economicData,
+          countryInfo: country.countryInfo,
+        })),
+        createdAt: recObj.createdAt,
+      };
+    });
+
+    res.status(200).json({
+      code: 200,
+      message: "추천 결과 조회 성공",
+      data: formattedRecommendations,
+    });
+  } catch (error) {
+    console.error("추천 결과 조회 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "서버 오류",
+      data: null,
+    });
+  }
+};
+
+// 특정 이력의 API 기반 국가 추천 결과 조회 API
+export const getRecommendationsByProfileId = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  const { profileId } = req.params;
+
+  try {
+    const recommendations = await CountryRecommendationResult.find({
+      user: req.user!._id,
+      profile: profileId,
+    })
+      .populate("profile", "language desiredSalary desiredJob additionalNotes")
+      .sort({ createdAt: -1 });
+
+    if (!recommendations || recommendations.length === 0) {
+      return res.status(404).json({
+        code: 404,
+        message: "해당 이력에 대한 추천 결과가 없습니다.",
+        data: null,
+      });
+    }
+
+    const formattedRecommendations = recommendations.map((rec) => {
+      const recObj = rec.toObject() as any;
+      const profile = recObj.profile || {};
+      return {
+        _id: recObj._id,
+        profile: {
+          language: profile.language || null,
+          desiredSalary: profile.desiredSalary || null,
+          desiredJob: profile.desiredJob || null,
+          additionalNotes: profile.additionalNotes || null,
+        },
+        recommendations: recObj.recommendations.map((country: any) => ({
+          country: country.country,
+          score: country.score,
+          rank: country.rank,
+          details: country.details,
+          economicData: country.economicData,
+          countryInfo: country.countryInfo,
+        })),
+        createdAt: recObj.createdAt,
+      };
+    });
+
+    res.status(200).json({
+      code: 200,
+      message: "추천 결과 조회 성공",
+      data: formattedRecommendations,
+    });
+  } catch (error) {
+    console.error("특정 이력 추천 결과 조회 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "서버 오류",
+      data: null,
+    });
   }
 };
 
@@ -351,59 +415,6 @@ export const getUserSimulationInputs = async (
     });
   } catch (error) {
     console.error("입력 조건 조회 실패:", error);
-    res.status(500).json({
-      code: 500,
-      message: "서버 오류",
-      data: null,
-    });
-  }
-};
-
-// 특정 이력별 GPT 추천 결과 조회 API
-export const getGptRecommendationByProfileId = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  const { profileId } = req.params;
-
-  try {
-    const recommendation = await GptRecommendation.findOne({
-      user: req.user!._id,
-      profile: profileId,
-    }).populate("profile", "-__v");
-
-    if (!recommendation) {
-      return res.status(404).json({
-        code: 404,
-        message: "해당 이력에 대한 추천 결과가 없습니다.",
-        data: null,
-      });
-    }
-
-    const recObj = recommendation.toObject() as any;
-    const rankings = (recObj.rankings || []).map((r: any) => ({
-      country: r.country,
-      job: r.job,
-      reason: r.reason,
-    }));
-
-    const formatted = {
-      recommendationId: recObj._id,
-      profileId: recObj.profile?._id || null,
-      languages: recObj.profile?.languages || [],
-      desiredSalary: recObj.profile?.desiredSalary || null,
-      desiredJob: recObj.profile?.desiredJob || null,
-      additionalNotes: recObj.profile?.additionalNotes || null,
-      rankings,
-    };
-
-    res.status(200).json({
-      code: 200,
-      message: "추천 결과 조회 성공",
-      data: formatted,
-    });
-  } catch (error) {
-    console.error("GPT 추천 결과 조회 실패:", error);
     res.status(500).json({
       code: 500,
       message: "서버 오류",

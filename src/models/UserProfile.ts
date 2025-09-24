@@ -7,30 +7,21 @@ const userProfileSchema = new mongoose.Schema({
     required: true,
   },
 
-  // 언어 능력
-  languages: [
-    {
-      language: {
-        type: String,
-        enum: [
-          "English",
-          "Japanese",
-          "Chinese",
-          "German",
-          "French",
-          "Spanish",
-          "Korean",
-          "Other",
-        ],
-        required: true,
-      },
-      level: {
-        type: String,
-        enum: ["원어민", "상급", "중급", "초급", "없음"],
-        required: true,
-      },
-    },
-  ],
+  // 언어 능력 (단일 언어 선택)
+  language: {
+    type: String,
+    enum: [
+      "English",
+      "Japanese",
+      "Chinese",
+      "German",
+      "French",
+      "Spanish",
+      "Korean",
+      "Other",
+    ],
+    required: true,
+  },
 
   // 희망 연봉
   desiredSalary: {

@@ -281,8 +281,8 @@ export const mypageSwaggerDocs = {
 
     "/api/mypage/recommendations": {
       get: {
-        summary: "GPT 추천 결과 목록 조회",
-        description: "사용자가 저장한 GPT 추천 결과 리스트 반환",
+        summary: "API 기반 국가 추천 결과 목록 조회",
+        description: "사용자가 저장한 API 기반 국가 추천 결과 리스트 반환",
         tags: ["Mypage"],
         security: [{ bearerAuth: [] }],
         responses: {
@@ -291,92 +291,123 @@ export const mypageSwaggerDocs = {
             content: {
               "application/json": {
                 schema: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      _id: {
-                        type: "string",
-                        example: "660f62c89abf1b001c66e678",
-                      },
-                      profile: {
-                        type: "object",
-                        properties: {
-                          languages: {
-                            type: "array",
-                            items: {
-                              type: "object",
-                              properties: {
-                                language: {
-                                  type: "string",
-                                  example: "English",
-                                },
-                                level: { type: "string", example: "상급" },
-                              },
-                            },
-                            example: [
-                              { language: "Korean", level: "원어민" },
-                              { language: "Japanese", level: "중급" },
-                            ],
-                          },
-                          desiredSalary: {
-                            type: "string",
-                            example: "3천만 ~ 5천만",
-                          },
-                          desiredJob: {
-                            type: "object",
-                            properties: {
-                              mainCategory: { type: "string", example: "교육" },
-                              subCategory: {
-                                type: "string",
-                                example: "과외/튜터",
-                              },
-                            },
-                          },
-                          example: "없음",
-                        },
-                        additionalNotes: {
-                          type: "string",
-                          example: "아시아 국가 희망",
-                        },
-                      },
-                    },
-                    rankings: {
+                  type: "object",
+                  properties: {
+                    code: { type: "number", example: 200 },
+                    message: { type: "string", example: "추천 결과 조회 성공" },
+                    data: {
                       type: "array",
                       items: {
                         type: "object",
                         properties: {
-                          country: { type: "string" },
-                          job: { type: "string" },
-                          reason: { type: "string" },
+                          _id: {
+                            type: "string",
+                            example: "660f62c89abf1b001c66e678",
+                          },
+                          profile: {
+                            type: "object",
+                            properties: {
+                              language: {
+                                type: "string",
+                                example: "English",
+                              },
+                              desiredSalary: {
+                                type: "string",
+                                example: "3천만 ~ 5천만",
+                              },
+                              desiredJob: {
+                                type: "object",
+                                properties: {
+                                  mainCategory: {
+                                    type: "string",
+                                    example: "교육",
+                                  },
+                                  subCategory: {
+                                    type: "string",
+                                    example: "과외/튜터",
+                                  },
+                                },
+                              },
+                              additionalNotes: {
+                                type: "string",
+                                example: "아시아 국가 희망",
+                              },
+                            },
+                          },
+                          recommendations: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                country: {
+                                  type: "string",
+                                  example: "싱가포르",
+                                },
+                                score: { type: "number", example: 85.5 },
+                                rank: { type: "number", example: 1 },
+                                details: {
+                                  type: "object",
+                                  properties: {
+                                    economicScore: {
+                                      type: "number",
+                                      example: 90,
+                                    },
+                                    employmentScore: {
+                                      type: "number",
+                                      example: 85,
+                                    },
+                                    languageScore: {
+                                      type: "number",
+                                      example: 95,
+                                    },
+                                    salaryScore: {
+                                      type: "number",
+                                      example: 80,
+                                    },
+                                  },
+                                },
+                                economicData: {
+                                  type: "object",
+                                  properties: {
+                                    gdpPerCapita: {
+                                      type: "number",
+                                      example: 65000,
+                                    },
+                                    unemploymentRate: {
+                                      type: "number",
+                                      example: 3.2,
+                                    },
+                                    averageSalary: {
+                                      type: "number",
+                                      example: 55000,
+                                    },
+                                  },
+                                },
+                                countryInfo: {
+                                  type: "object",
+                                  properties: {
+                                    region: { type: "string", example: "Asia" },
+                                    languages: {
+                                      type: "array",
+                                      items: { type: "string" },
+                                      example: ["English", "Chinese", "Malay"],
+                                    },
+                                    population: {
+                                      type: "number",
+                                      example: 5900000,
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                          createdAt: {
+                            type: "string",
+                            format: "date-time",
+                            example: "2025-04-04T05:34:21.201Z",
+                          },
                         },
                       },
-                      example: [
-                        {
-                          country: "일본",
-                          job: "수학 교사",
-                          reason:
-                            "일본어 구사 가능하며, 학원에서의 수학 지도 경험이 있음",
-                        },
-                        {
-                          country: "싱가포르",
-                          job: "수학 튜터",
-                          reason:
-                            "싱가포르는 교육열이 높아 수학 튜터에 대한 수요가 많음",
-                        },
-                        {
-                          country: "중국",
-                          job: "국제학교 수학 선생님",
-                          reason:
-                            "중국의 국제학교에서는 외국인 선생님을 선호하며, 토익 점수와 학점이 높아 유리함",
-                        },
-                      ],
-                    },
-
-                    createdAt: {
-                      type: "string",
-                      format: "date-time",
-                      example: "2025-04-04T05:34:21.201Z",
                     },
                   },
                 },
@@ -536,8 +567,8 @@ export const mypageSwaggerDocs = {
 
   "/api/mypage/recommendations/by-profile/{profileId}": {
     get: {
-      summary: "특정 이력의 GPT 추천 결과 조회",
-      description: "해당 이력(profileId)에 대한 GPT 추천 결과 반환",
+      summary: "특정 이력의 API 기반 국가 추천 결과 조회",
+      description: "해당 이력(profileId)에 대한 API 기반 국가 추천 결과 반환",
       tags: ["Mypage"],
       security: [{ bearerAuth: [] }],
       parameters: [
@@ -557,43 +588,113 @@ export const mypageSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  _id: { type: "string", example: "663fa12345abcd..." },
-                  profile: {
-                    type: "object",
-                    properties: {
-                      languages: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            language: { type: "string" },
-                            level: { type: "string" },
-                          },
-                        },
-                      },
-                      desiredSalary: { type: "string" },
-                      desiredJob: {
-                        type: "object",
-                        properties: {
-                          mainCategory: { type: "string" },
-                          subCategory: { type: "string" },
-                        },
-                      },
-                      additionalNotes: { type: "string" },
-                    },
-                  },
-                  rankings: {
+                  code: { type: "number", example: 200 },
+                  message: { type: "string", example: "추천 결과 조회 성공" },
+                  data: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        country: { type: "string" },
-                        job: { type: "string" },
-                        reason: { type: "string" },
+                        _id: { type: "string", example: "663fa12345abcd..." },
+                        profile: {
+                          type: "object",
+                          properties: {
+                            language: {
+                              type: "string",
+                              example: "English",
+                            },
+                            desiredSalary: {
+                              type: "string",
+                              example: "3천만 ~ 5천만",
+                            },
+                            desiredJob: {
+                              type: "object",
+                              properties: {
+                                mainCategory: {
+                                  type: "string",
+                                  example: "교육",
+                                },
+                                subCategory: {
+                                  type: "string",
+                                  example: "과외/튜터",
+                                },
+                              },
+                            },
+                            additionalNotes: {
+                              type: "string",
+                              example: "아시아 국가 희망",
+                            },
+                          },
+                        },
+                        recommendations: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              country: { type: "string", example: "싱가포르" },
+                              score: { type: "number", example: 85.5 },
+                              rank: { type: "number", example: 1 },
+                              details: {
+                                type: "object",
+                                properties: {
+                                  economicScore: {
+                                    type: "number",
+                                    example: 90,
+                                  },
+                                  employmentScore: {
+                                    type: "number",
+                                    example: 85,
+                                  },
+                                  languageScore: {
+                                    type: "number",
+                                    example: 95,
+                                  },
+                                  salaryScore: { type: "number", example: 80 },
+                                },
+                              },
+                              economicData: {
+                                type: "object",
+                                properties: {
+                                  gdpPerCapita: {
+                                    type: "number",
+                                    example: 65000,
+                                  },
+                                  unemploymentRate: {
+                                    type: "number",
+                                    example: 3.2,
+                                  },
+                                  averageSalary: {
+                                    type: "number",
+                                    example: 55000,
+                                  },
+                                },
+                              },
+                              countryInfo: {
+                                type: "object",
+                                properties: {
+                                  region: { type: "string", example: "Asia" },
+                                  languages: {
+                                    type: "array",
+                                    items: { type: "string" },
+                                    example: ["English", "Chinese", "Malay"],
+                                  },
+                                  population: {
+                                    type: "number",
+                                    example: 5900000,
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                        createdAt: {
+                          type: "string",
+                          format: "date-time",
+                          example: "2025-04-04T05:34:21.201Z",
+                        },
                       },
                     },
                   },
-                  createdAt: { type: "string", format: "date-time" },
                 },
               },
             },

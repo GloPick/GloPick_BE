@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import SimulationInput from "../models/simulationInput";
 import SimulationResult from "../models/simulationResult";
-import GptRecommendation from "../models/gptRecommendation";
+import UserProfile from "../models/UserProfile";
 import {
   generateSimulationResponse,
   getCityRecommendations,
@@ -12,92 +12,33 @@ import { getBudgetSuitability } from "../services/gptMigrationAssessmentService"
 import { calculateMigrationSuitability } from "../services/gptCalculation";
 import SimulationList from "../models/simulationList";
 
-// 언어 능력 평가 함수
-const assessLanguageLevel = (languages: any[]): string => {
-  if (!languages || languages.length === 0) {
+// 언어 능력 평가 함수 (단일 언어로 변경)
+const assessLanguageLevel = (language: string): string => {
+  if (!language || language.trim() === "") {
     return "부족함";
   }
 
-  // 영어 능력을 우선적으로 확인
-  const englishAbility = languages.find(
-    (lang) => lang.language === "English"
-  );
-  if (englishAbility) {
-    switch (englishAbility.level) {
-      case "원어민":
-      case "상급":
-        return "우수함";
-      case "중급":
-        return "보통";
-      case "초급":
-        return "부족함";
-      default:
-        return "부족함";
-    }
+  // 영어인 경우 우수함으로 평가
+  if (language === "English") {
+    return "우수함";
   }
 
-  // 영어가 없으면 다른 언어 중 가장 높은 수준으로 평가
-  const maxLevel = Math.max(
-    ...languages.map((lang) => {
-      switch (lang.level) {
-        case "원어민":
-          return 4;
-        case "상급":
-          return 3;
-        case "중급":
-          return 2;
-        case "초급":
-          return 1;
-        default:
-          return 0;
-      }
-    })
-  );
+  // 기타 주요 언어들은 보통으로 평가
+  const majorLanguages = ["German", "French", "Spanish", "Japanese", "Chinese"];
+  if (majorLanguages.includes(language)) {
+    return "보통";
+  }
 
-  if (maxLevel >= 3) return "우수함";
-  if (maxLevel >= 2) return "보통";
+  // 한국어나 기타 언어는 부족함으로 평가 (해외 이주 관점에서)
   return "부족함";
-};
-
-// 시뮬레이션 점수 계산
-const getSimulationScoreValues = async (
-  simulationInputId: string,
-  userId: string
-) => {
-  const simulationInput = await SimulationInput.findOne({
-    _id: simulationInputId,
-    user: userId,
-  }).lean();
-
-  if (!simulationInput) throw new Error("시뮬레이션 입력 정보 없음");
-
-  const UserProfile = (await import("../models/UserProfile")).default;
-  const userProfile = await UserProfile.findById(
-    simulationInput.profile
-  ).lean();
-  if (!userProfile) throw new Error("사용자 이력 정보 없음");
-
-  const migrationAssessment = await getBudgetSuitability(simulationInput);
-
-  // UserProfile에서 언어 능력 가져옴
-  const languageAssessment = assessLanguageLevel(userProfile.languages);
-
-  const migrationSuitability = calculateMigrationSuitability({
-    languageLevel: languageAssessment,
-    visaStatus: migrationAssessment.visaLevel,
-    budgetSuitabilityLevel: migrationAssessment.budgetLevel,
-    hasCompanion: migrationAssessment.accompanyLevel ?? "부족함",
-  });
-
-  return { migrationSuitability };
 };
 
 // 사용자 입력 저장
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
   try {
-    const { recommendationId, profileId } = req.params;
+    const { profileId } = req.params;
     const {
-      selectedRankIndex,
+      selectedCountry,
       budget,
       duration,
       hasLicense,
@@ -109,21 +50,15 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       additionalNotes,
     } = req.body;
 
-    // 추천 결과에서 선택한 국가 추출
-    const recommendation = await GptRecommendation.findOne({
-      _id: recommendationId,
-      user: req.user!._id,
-    });
-
-    if (!recommendation || !recommendation.rankings[selectedRankIndex]) {
-      return res.status(404).json({
-        code: 404,
-        message: "선택한 추천 결과를 찾을 수 없습니다.",
+    // 선택한 국가 검증
+    if (!selectedCountry) {
+      return res.status(400).json({
+        code: 400,
+        message: "국가를 선택해주세요.",
         data: null,
       });
     }
 
-    const selectedCountry = recommendation.rankings[selectedRankIndex].country;
     // 이미 시뮬레이션을 실행했던 추가 이력인지 확인
     const isDuplicate = await SimulationInput.findOne({
       user: req.user!._id,
@@ -315,19 +250,13 @@ export const generateAndSaveSimulation = async (
       },
     });
 
-    const recommendation = await GptRecommendation.findOne({
+    // 사용자 프로필에서 직무 정보 가져오기 (GPT 추천 대신)
+    const userProfile = await UserProfile.findOne({
+      _id: input.profile,
       user: req.user!._id,
-      "rankings.country": input.selectedCountry, // 국가 기준으로 찾기
     });
 
-    const matchedRanking = recommendation?.rankings.find(
-      (r: any) => r.country === input.selectedCountry
-    );
-    const desiredJob = matchedRanking?.job || "미지정";
-    const { migrationSuitability } = await getSimulationScoreValues(
-      input._id.toString(),
-      req.user!._id.toString()
-    );
+    const desiredJob = userProfile?.desiredJob?.mainCategory || "미지정";
 
     const isAlreadyExist = await SimulationList.findOne({
       user: req.user!._id,
@@ -342,7 +271,6 @@ export const generateAndSaveSimulation = async (
         job: desiredJob,
         country: input.selectedCountry,
         city: selectedCity,
-        migrationSuitability: migrationSuitability,
       });
     }
 
@@ -423,34 +351,6 @@ export const getSimulationFlightLinks = async (
     res.status(500).json({
       code: 500,
       message: "서버 오류",
-      data: null,
-    });
-  }
-};
-
-// 취업 가능성 및 이주 추천도 점수 API
-export const calculateSimulationScores = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const { simulationInputId } = req.params;
-    const { migrationSuitability } = await getSimulationScoreValues(
-      simulationInputId,
-      req.user!._id.toString()
-    );
-    res.status(200).json({
-      code: 200,
-      message: "점수 계산 성공",
-      data: {
-        migrationSuitability,
-      },
-    });
-  } catch (error) {
-    console.error("점수 계산 실패:", error);
-    res.status(500).json({
-      code: 500,
-      message: "오류 발생",
       data: null,
     });
   }

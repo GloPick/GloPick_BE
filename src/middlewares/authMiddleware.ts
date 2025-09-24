@@ -32,4 +32,28 @@ export const protect = async (
   }
 };
 
+// 선택적 JWT 인증 미들웨어 (토큰이 있으면 인증, 없으면 통과)
+export const optionalAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  let token = req.headers.authorization;
+
+  if (token && token.startsWith("Bearer")) {
+    try {
+      const decoded: any = jwt.verify(
+        token.split(" ")[1],
+        process.env.JWT_SECRET!
+      );
+      req.user = await User.findById(decoded.id).select("-password");
+    } catch (error) {
+      // 토큰이 유효하지 않아도 계속 진행 (req.user는 undefined)
+      console.log("토큰 검증 실패, 비인증 상태로 진행:", error);
+    }
+  }
+  // 토큰이 없거나 유효하지 않아도 next() 호출
+  next();
+};
+
 export { AuthRequest };

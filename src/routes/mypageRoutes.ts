@@ -3,9 +3,9 @@ import {
   getUserInfo,
   updateUserInfo,
   deleteUser,
-  getGptRecommendations,
-  getGptRecommendationByProfileId,
   getSimulationsByProfileId,
+  getUserRecommendations,
+  getRecommendationsByProfileId,
 } from "../controllers/mypageController";
 import {
   getProfile,
@@ -37,8 +37,6 @@ router.put("/profiles/:id", protect, asyncHandler(updateProfile));
 // 사용자 이력 삭제 (DELETE /api/profile/:id)
 router.delete("/profiles/:id", protect, asyncHandler(deleteProfile));
 
-// GPT 추천 결과 조회
-router.get("/recommendations", protect, asyncHandler(getGptRecommendations));
 // 시뮬레이션 전 추가 정보 조회
 router.get(
   "/simulations/inputs",
@@ -48,16 +46,21 @@ router.get(
 // 시뮬레이션 결과 조회
 router.get("/simulations", protect, asyncHandler(getUserSimulations));
 
-// 특정 이력별 GPT 추천 결과 조회 API
-router.get(
-  "/recommendations/by-profile/:profileId",
-  protect,
-  asyncHandler(getGptRecommendationByProfileId)
-);
 // 특정 이력별 시뮬레이션 결과 조회 API
 router.get(
   "/simulations/by-profile/:profileId",
   protect,
   asyncHandler(getSimulationsByProfileId)
 );
+
+// API 기반 국가 추천 결과 조회 API
+router.get("/recommendations", protect, asyncHandler(getUserRecommendations));
+
+// 특정 이력별 API 기반 국가 추천 결과 조회 API
+router.get(
+  "/recommendations/by-profile/:profileId",
+  protect,
+  asyncHandler(getRecommendationsByProfileId)
+);
+
 export default router;

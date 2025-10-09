@@ -52,33 +52,29 @@ export const countryRecommendationSwaggerDocs = {
                     },
                     required: ["code", "nameKo", "nameEn"],
                   },
-                  priorities: {
-                    type: "object",
-                    properties: {
-                      first: {
-                        type: "string",
-                        enum: ["language", "salary", "job"],
-                        example: "language",
-                      },
-                      second: {
-                        type: "string",
-                        enum: ["language", "salary", "job"],
-                        example: "salary",
-                      },
-                      third: {
-                        type: "string",
-                        enum: ["language", "salary", "job"],
-                        example: "job",
-                      },
-                    },
-                    required: ["first", "second", "third"],
+                  languageWeight: {
+                    type: "integer",
+                    description: "언어 가중치 (10 단위)",
+                    example: 50,
+                  },
+                  salaryWeight: {
+                    type: "integer",
+                    description: "연봉 가중치 (10 단위)",
+                    example: 30,
+                  },
+                  jobWeight: {
+                    type: "integer",
+                    description: "직무 가중치 (10 단위)",
+                    example: 20,
                   },
                 },
                 required: [
                   "language",
                   "expectedSalary",
                   "jobField",
-                  "priorities",
+                  "languageWeight",
+                  "salaryWeight",
+                  "jobWeight",
                 ],
               },
             },

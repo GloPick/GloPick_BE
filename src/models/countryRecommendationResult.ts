@@ -31,6 +31,11 @@ const CountryRecommendationResultSchema = new mongoose.Schema(
         },
       },
     ],
+    weights: {
+      language: { type: Number, required: true },
+      salary: { type: Number, required: true },
+      job: { type: Number, required: true },
+    },
   },
   { timestamps: true }
 );
@@ -39,3 +44,10 @@ export default mongoose.model(
   "CountryRecommendationResult",
   CountryRecommendationResultSchema
 );
+export interface CountryRecommendationResult {
+  weights: {
+    language: number;
+    salary: number;
+    job: number;
+  };
+}

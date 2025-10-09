@@ -3,7 +3,14 @@ export interface UserCareerProfile {
   language: string; // 사용 가능 언어 (단일 선택)
   expectedSalary: number; // 희망 연봉 (USD)
   jobField: ISCOJobField; // ISCO-08 기준 직무 분야
-  priorities: UserPriorities; // 우선순위
+  languageScore?: number; // 언어 점수
+  salaryScore?: number; // 연봉 점수
+  jobScore?: number; // 직무 점수
+  weights?: {
+    languageWeight: number; // 언어 가중치
+    salaryWeight: number; // 연봉 가중치
+    jobWeight: number; // 직무 가중치
+  };
 }
 
 // ISCO-08 직무 분류
@@ -13,11 +20,6 @@ export interface ISCOJobField {
   nameEn: string; // 영어 직무명
 }
 
-export interface UserPriorities {
-  first: "language" | "salary" | "job"; // 1순위 (가중치 0.5)
-  second: "language" | "salary" | "job"; // 2순위 (가중치 0.3)
-  third: "language" | "salary" | "job"; // 3순위 (가중치 0.2)
-}
 
 // 국가 데이터 타입
 export interface CountryData {

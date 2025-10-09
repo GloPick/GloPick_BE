@@ -5,7 +5,7 @@ export const profileSwaggerDocs = {
       post: {
         summary: "사용자 이력 등록",
         description:
-          "사용자의 언어 능력, 희망 연봉, 직무, 추가 메모 등을 등록합니다. 동일한 내용의 이력은 중복 등록이 불가합니다.",
+          "사용자의 언어 능력, 희망 연봉, 직무, 가중치, 추가 메모 등을 등록합니다. 동일한 내용의 이력은 중복 등록이 불가합니다.",
         tags: ["Profile"],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -53,12 +53,34 @@ export const profileSwaggerDocs = {
                       },
                     },
                   },
+                  languageWeight: {
+                    type: "integer",
+                    description: "언어 가중치 (10 단위)",
+                    example: 40,
+                  },
+                  salaryWeight: {
+                    type: "integer",
+                    description: "연봉 가중치 (10 단위)",
+                    example: 30,
+                  },
+                  jobWeight: {
+                    type: "integer",
+                    description: "직무 가중치 (10 단위)",
+                    example: 30,
+                  },
                   additionalNotes: {
                     type: "string",
                     example: "원격 근무 원함",
                   },
                 },
-                required: ["language", "desiredSalary", "desiredJob"],
+                required: [
+                  "language",
+                  "desiredSalary",
+                  "desiredJob",
+                  "languageWeight",
+                  "salaryWeight",
+                  "jobWeight",
+                ],
               },
             },
           },

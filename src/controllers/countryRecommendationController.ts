@@ -108,29 +108,6 @@ function validateUserProfile(profile: UserCareerProfile): string | null {
   return null; // 검증 통과
 }
 
-// 가중치 설정 핸들러
-export const setWeights = asyncHandler(async (req: Request, res: Response) => {
-  const { language, salary, job } = req.body;
-
-  if (
-    [language, salary, job].some((weight) => weight % 10 !== 0) ||
-    language + salary + job !== 100
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "가중치는 10단위여야 하며, 합이 100이어야 합니다.",
-    });
-  }
-
-  // 가중치 저장
-  saveWeights({ language, salary, job });
-
-  res.status(200).json({
-    success: true,
-    message: "가중치가 성공적으로 저장되었습니다.",
-  });
-});
-
 // 사용자 인증 및 프로필 ID 검증 함수
 async function validateUserAndProfile(req: AuthRequest, profileId: string) {
   if (!req.user) {
@@ -301,28 +278,3 @@ export const getCountryRecommendations = asyncHandler(
     }
   }
 );
-
-// 사용자 프로필 등록 핸들러
-export const registerUserProfile = asyncHandler(async (req: Request, res: Response) => {
-  const userProfile: UserCareerProfile = {
-    language: req.body.language,
-    expectedSalary: req.body.expectedSalary,
-    jobField: req.body.jobField,
-    weights: {
-      languageWeight: req.body.languageWeight,
-      salaryWeight: req.body.salaryWeight,
-      jobWeight: req.body.jobWeight,
-    },
-  };
-
-  // 가중치 검증
-  if ([req.body.languageWeight, req.body.salaryWeight, req.body.jobWeight].some((weight) => weight % 10 !== 0) || 
-      req.body.languageWeight + req.body.salaryWeight + req.body.jobWeight !== 100) {
-    return res.status(400).json({
-      success: false,
-      message: "가중치는 10단위여야 하며, 합이 100이어야 합니다.",
-    });
-  }
-
-  // 사용자 프로필 저장 로직
-});

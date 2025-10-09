@@ -55,8 +55,8 @@ export class CountryRecommendationService {
       // 4. 사용자 입력 가중치 적용
       const weightedCountries = this.applyDynamicWeights(scoredCountries, finalWeights);
 
-      // 5. 상위 3개 국가 선별
-      const topCountries = this.selectTopCountries(weightedCountries, 3);
+      // 5. 상위 5개 국가 선별
+      const topCountries = this.selectTopCountries(weightedCountries, 5);
 
       // 6. 추천 결과 포맷팅
       return this.formatRecommendations(topCountries, userProfile, finalWeights);

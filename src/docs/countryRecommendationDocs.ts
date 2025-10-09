@@ -2,10 +2,10 @@
 export const countryRecommendationSwaggerDocs = {
   paths: {
     "/api/country-recommendations/{profileId}": {
-      post: {
+      get: {
         summary: "인증된 사용자의 특정 프로필 기반 국가 추천",
         description:
-          "특정 프로필 ID로 국가 추천을 요청합니다. 중복 요청 시 기존 결과를 반환하며, 신규 추천 시 결과를 저장합니다.",
+          "특정 프로필 ID로 국가 추천을 요청합니다. 프로필에 저장된 정보(언어, 희망연봉, 직무, 가중치)를 사용하여 국가를 추천합니다.",
         tags: ["Country Recommendations"],
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -17,72 +17,9 @@ export const countryRecommendationSwaggerDocs = {
             description: "추천을 받을 프로필 ID",
           },
         ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  language: {
-                    type: "string",
-                    enum: [
-                      "English",
-                      "Japanese",
-                      "Chinese",
-                      "German",
-                      "French",
-                      "Spanish",
-                      "Korean",
-                      "Other",
-                    ],
-                    example: "Korean",
-                  },
-                  expectedSalary: {
-                    type: "number",
-                    description: "희망 연봉 (USD)",
-                    example: 80000,
-                  },
-                  jobField: {
-                    type: "object",
-                    properties: {
-                      code: { type: "string", example: "2" },
-                      nameKo: { type: "string", example: "전문가" },
-                      nameEn: { type: "string", example: "Professionals" },
-                    },
-                    required: ["code", "nameKo", "nameEn"],
-                  },
-                  languageWeight: {
-                    type: "integer",
-                    description: "언어 가중치 (10 단위)",
-                    example: 50,
-                  },
-                  salaryWeight: {
-                    type: "integer",
-                    description: "연봉 가중치 (10 단위)",
-                    example: 30,
-                  },
-                  jobWeight: {
-                    type: "integer",
-                    description: "직무 가중치 (10 단위)",
-                    example: 20,
-                  },
-                },
-                required: [
-                  "language",
-                  "expectedSalary",
-                  "jobField",
-                  "languageWeight",
-                  "salaryWeight",
-                  "jobWeight",
-                ],
-              },
-            },
-          },
-        },
         responses: {
           200: {
-            description: "추천 완료 또는 기존 추천 결과 반환",
+            description: "프로필 기반 국가 추천 완료",
             content: {
               "application/json": {
                 schema: {

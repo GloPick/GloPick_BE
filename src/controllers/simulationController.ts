@@ -6,10 +6,10 @@ import UserProfile from "../models/UserProfile";
 import {
   generateSimulationResponse,
   getCityRecommendations,
+  getSimpleCityRecommendations,
+  getDetailedCityRecommendations,
 } from "../services/gptsimulationService";
 import { createFlightLinks } from "../utils/flightLinkGenerator";
-import { getBudgetSuitability } from "../services/gptMigrationAssessmentService";
-import { calculateMigrationSuitability } from "../services/gptCalculation";
 import SimulationList from "../models/simulationList";
 
 // 언어 능력 평가 함수 (단일 언어로 변경)
@@ -33,105 +33,20 @@ const assessLanguageLevel = (language: string): string => {
   return "부족함";
 };
 
-// 사용자 입력 저장
+// 시뮬레이션 추가 정보 입력 및 저장 (도시 선택 후)
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
   try {
-    const { profileId } = req.params;
     const {
-      selectedCountry,
-      budget,
-      duration,
-      hasLicense,
-      jobTypes,
+      inputId,
+      selectedCity,
+      initialBudget,
       requiredFacilities,
-      accompanyingFamily,
-      visaStatus,
       departureAirport,
-      additionalNotes,
     } = req.body;
 
-    // 선택한 국가 검증
-    if (!selectedCountry) {
-      return res.status(400).json({
-        code: 400,
-        message: "국가를 선택해주세요.",
-        data: null,
-      });
-    }
-
-    // 이미 시뮬레이션을 실행했던 추가 이력인지 확인
-    const isDuplicate = await SimulationInput.findOne({
-      user: req.user!._id,
-      profile: profileId,
-      selectedCountry,
-      budget,
-      duration,
-      hasLicense,
-      jobTypes: { $all: jobTypes },
-      requiredFacilities: { $all: requiredFacilities },
-      accompanyingFamily,
-      visaStatus,
-      departureAirport,
-      additionalNotes,
-    });
-
-    if (isDuplicate) {
-      return res.status(400).json({
-        code: 400,
-        message: "이미 동일한 조건으로 시뮬레이션 입력이 존재합니다.",
-        data: {
-          inputId: isDuplicate._id,
-        },
-      });
-    }
-
-    const input = await SimulationInput.create({
-      user: req.user!._id,
-      profile: profileId,
-      selectedCountry,
-      budget,
-      duration,
-      hasLicense,
-      jobTypes,
-      requiredFacilities,
-      accompanyingFamily,
-      visaStatus,
-      departureAirport,
-      additionalNotes,
-    });
-
-    const inputId = input._id;
-
-    res.status(201).json({
-      code: 201,
-      message: "시뮬레이션 입력 정보 저장 완료",
-      data: {
-        inputId,
-        selectedCountry,
-        budget,
-        duration,
-        hasLicense,
-        jobTypes,
-        requiredFacilities,
-        accompanyingFamily,
-        visaStatus,
-        departureAirport,
-        additionalNotes,
-      },
-    });
-  } catch (error) {
-    console.error("입력 저장 실패:", error);
-    res.status(500).json({ code: 500, message: "저장 실패", data: null });
-  }
-};
-
-// 도시 추천
-export const recommendCities = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-
-  try {
+    // 기본 SimulationInput 조회
     const input = await SimulationInput.findOne({
-      _id: id,
+      _id: inputId,
       user: req.user!._id,
     });
 
@@ -142,32 +57,174 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
         data: null,
       });
     }
-    // 중복 처리
-    if (input.recommendedCities && input.recommendedCities.length > 0) {
+
+    // 선택한 도시 검증 (인덱스 또는 도시명 지원)
+    if (selectedCity === undefined || selectedCity === null) {
       return res.status(400).json({
         code: 400,
-        message: "이미 도시 추천이 완료된 입력입니다.",
-        data: {
-          recommendedCities: input.recommendedCities,
-          inputId: input._id,
-        },
+        message: "도시를 선택해주세요.",
+        data: null,
       });
     }
 
-    const cities = await getCityRecommendations(input); // GPT 호출 → 도시 3개 추천
+    let actualSelectedCity: string;
+    
+    // 숫자인 경우 인덱스로 처리
+    if (!isNaN(Number(selectedCity))) {
+      const cityIndex = Number(selectedCity);
+      if (cityIndex < 0 || cityIndex >= (input.recommendedCities?.length || 0)) {
+        return res.status(400).json({
+          code: 400,
+          message: "유효하지 않은 도시 인덱스입니다.",
+          data: null,
+        });
+      }
+      actualSelectedCity = input.recommendedCities![cityIndex];
+    } else {
+      // 문자열인 경우 도시명으로 처리
+      if (!input.recommendedCities?.includes(selectedCity)) {
+        return res.status(400).json({
+          code: 400,
+          message: "추천된 도시 중에서 선택해주세요.",
+          data: null,
+        });
+      }
+      actualSelectedCity = selectedCity;
+    }
 
-    input.recommendedCities = cities.map((city: { name: string }) => city.name);
+    // 초기 예산 검증
+    if (!initialBudget) {
+      return res.status(400).json({
+        code: 400,
+        message: "초기 정착 예산을 입력해주세요.",
+        data: null,
+      });
+    }
+
+    // 필수 편의시설 검증
+    if (!requiredFacilities || requiredFacilities.trim() === "") {
+      return res.status(400).json({
+        code: 400,
+        message: "필요한 시설 및 서비스를 입력해주세요.",
+        data: null,
+      });
+    }
+
+    // 출발 공항 검증
+    if (!departureAirport) {
+      return res.status(400).json({
+        code: 400,
+        message: "출발 공항을 선택해주세요.",
+        data: null,
+      });
+    }
+
+    // 추가 정보 업데이트
+    input.selectedCity = actualSelectedCity;
+    input.initialBudget = initialBudget;
+    input.requiredFacilities = requiredFacilities;
+    input.departureAirport = departureAirport;
 
     await input.save();
+
+    res.status(201).json({
+      code: 201,
+      message: "시뮬레이션 입력 정보 저장 성공",
+      data: {
+        inputId: input._id,
+        selectedCountry: input.selectedCountry,
+        selectedCity: input.selectedCity,
+        initialBudget: input.initialBudget,
+        requiredFacilities: input.requiredFacilities,
+        departureAirport: input.departureAirport,
+      },
+    });
+  } catch (error) {
+    console.error("시뮬레이션 입력 저장 실패:", error);
+    res.status(500).json({ code: 500, message: "저장 실패", data: null });
+  }
+};
+
+// 도시 추천 (국가 추천 이후 바로 실행)
+// 도시 추천 (국가 추천 이후 바로 실행)
+export const recommendCities = async (req: AuthRequest, res: Response) => {
+  const { recommendationId, profileId } = req.params;
+  const { selectedCountryIndex } = req.body;
+
+  try {
+    // 국가 추천 결과 조회
+    const CountryRecommendationResult = require("../models/countryRecommendationResult").default;
+    const recommendation = await CountryRecommendationResult.findOne({
+      _id: recommendationId,
+      user: req.user!._id,
+      profile: profileId,
+    });
+
+    if (!recommendation) {
+      return res.status(404).json({
+        code: 404,
+        message: "추천 결과를 찾을 수 없습니다.",
+        data: null,
+      });
+    }
+
+    // 선택된 인덱스 검증
+    if (selectedCountryIndex < 0 || selectedCountryIndex >= recommendation.recommendations.length) {
+      return res.status(400).json({
+        code: 400,
+        message: "유효하지 않은 국가 인덱스입니다.",
+        data: null,
+      });
+    }
+
+    const selectedCountry = recommendation.recommendations[selectedCountryIndex].country;
+
+    // 프로필 정보 조회
+    const profile = await UserProfile.findById(profileId);
+    if (!profile) {
+      return res.status(404).json({
+        code: 404,
+        message: "프로필을 찾을 수 없습니다.",
+        data: null,
+      });
+    }
+
+    // GPT를 통한 상세 도시 추천
+    const userJob = profile.desiredJob?.mainCategory || profile.desiredJob?.subCategory;
+    const userLanguage = profile.language;
+    const cityRecommendations = await getSimpleCityRecommendations(
+      selectedCountry,
+      userJob || undefined,
+      userLanguage || undefined
+    );
+
+    // 기본 SimulationInput 생성 (추후 추가 정보 입력용)
+    const newInput = new SimulationInput({
+      user: req.user!._id,
+      profile: profileId,
+      selectedCountry,
+      recommendedCities: cityRecommendations.map((city: any) => city.name),
+      // 초기 예산 등은 아직 입력하지 않음
+    });
+
+    await newInput.save();
 
     res.status(200).json({
       code: 200,
       message: "도시 추천 성공",
-      data: cities,
+      data: {
+        inputId: newInput._id,
+        selectedCountry,
+        recommendedCities: cityRecommendations,
+      },
     });
   } catch (error) {
     console.error("도시 추천 실패:", error);
-    res.status(500).json({ code: 500, message: "GPT 호출 실패", data: null });
+    res.status(500).json({
+      code: 500,
+      message: "GPT 호출 실패",
+      data: null,
+    });
   }
 };
 
@@ -177,7 +234,7 @@ export const generateAndSaveSimulation = async (
   res: Response
 ) => {
   const { id } = req.params;
-  const { selectedCityIndex } = req.body;
+  const { selectedCityIndex, initialBudget, requiredFacilities, departureAirport } = req.body;
 
   try {
     const input = await SimulationInput.findOne({
@@ -193,10 +250,8 @@ export const generateAndSaveSimulation = async (
       });
     }
 
-    if (
-      typeof selectedCityIndex !== "number" ||
-      !input.recommendedCities[selectedCityIndex]
-    ) {
+    // 필수 필드 검증
+    if (typeof selectedCityIndex !== "number" || !input.recommendedCities[selectedCityIndex]) {
       return res.status(400).json({
         code: 400,
         message: "유효한 도시 인덱스가 필요합니다.",
@@ -204,6 +259,31 @@ export const generateAndSaveSimulation = async (
       });
     }
 
+    if (!initialBudget) {
+      return res.status(400).json({
+        code: 400,
+        message: "초기 정착 예산을 입력해주세요.",
+        data: null,
+      });
+    }
+
+    if (!requiredFacilities || requiredFacilities.trim() === "") {
+      return res.status(400).json({
+        code: 400,
+        message: "필요한 시설 및 서비스를 입력해주세요.",
+        data: null,
+      });
+    }
+
+    if (!departureAirport) {
+      return res.status(400).json({
+        code: 400,
+        message: "출발 공항을 선택해주세요.",
+        data: null,
+      });
+    }
+
+    // 이미 생성된 시뮬레이션 확인
     const existing = await SimulationResult.findOne({
       input: input._id,
       user: req.user!._id,
@@ -220,22 +300,26 @@ export const generateAndSaveSimulation = async (
             ...existing.result,
           },
           flightLinks: createFlightLinks(
-            input.departureAirport,
-            input.selectedCity ?? input.recommendedCities[0]
+            departureAirport,
+            input.selectedCity ?? input.recommendedCities[selectedCityIndex]
           ),
         },
       });
     }
 
+    // SimulationInput 업데이트
     const selectedCity = input.recommendedCities[selectedCityIndex];
     input.selectedCity = selectedCity;
+    input.initialBudget = initialBudget;
+    input.requiredFacilities = requiredFacilities;
+    input.departureAirport = departureAirport;
     await input.save();
 
     const gptResult = await generateSimulationResponse(input);
     const arrivalAirportCode = gptResult?.nearestAirport?.code || selectedCity;
 
     const flightLinks = createFlightLinks(
-      input.departureAirport,
+      departureAirport,
       arrivalAirportCode
     );
 
@@ -373,6 +457,54 @@ export const getSimulationList = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       code: 500,
       message: "시뮬레이션 요약 조회 실패",
+    });
+  }
+};
+
+// 새로운 플로우: 국가 선택 후 GPT를 통한 도시 추천
+export const selectCountryAndGetCities = async (req: AuthRequest, res: Response) => {
+  try {
+    const { selectedCountry, profileId } = req.body;
+
+    if (!selectedCountry || !profileId) {
+      return res.status(400).json({
+        code: 400,
+        message: "선택한 국가와 프로필 ID가 필요합니다.",
+        data: null,
+      });
+    }
+
+    const profile = await UserProfile.findById(profileId);
+    if (!profile) {
+      return res.status(404).json({
+        code: 404,
+        message: "프로필을 찾을 수 없습니다.",
+        data: null,
+      });
+    }
+
+    // GPT를 통한 도시 추천
+    const recommendedCities = await getDetailedCityRecommendations(
+      selectedCountry,
+      profile.desiredJob?.mainCategory || "기타",
+      profile.language
+    );
+
+    res.status(200).json({
+      code: 200,
+      message: "도시 추천이 완료되었습니다.",
+      data: {
+        selectedCountry,
+        recommendedCities,
+        profileId,
+      },
+    });
+  } catch (error) {
+    console.error("도시 추천 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "도시 추천 중 오류가 발생했습니다.",
+      data: null,
     });
   }
 };

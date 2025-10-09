@@ -18,10 +18,6 @@ const simulationListSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  migrationSuitability: {
-    type: Number,
-    required: true,
-  },
 });
 
 export default mongoose.model("SimulationList", simulationListSchema);

@@ -11,18 +11,16 @@ const simulationResultSchema = new mongoose.Schema({
   result: {
     recommendedCity: String,
     // 지역 정보
-    // 대중교통, 치안, 기후, 한인커뮤니티,필수시설, 나라문화, 주의사항
     localInfo: {
+      essentialFacilities: [String], // 사용자가 요청한 필수 편의 시설 정보
       publicTransport: String,
       safetyLevel: String,
       climateSummary: String,
       koreanCommunity: String,
-      essentialFacilities: [String],
       culturalTips: String,
       warnings: String,
     },
-    // 한 달 예산 전략
-    // 주거비, 식비, 교통 비, 기타비용, 한 달 총 비용, 1년 비용, 절약 팁, 물가비교
+    // 한 달 예산 전략 (사용자 초기 예산 기반)
     estimatedMonthlyCost: {
       housing: String,
       food: String,
@@ -34,16 +32,7 @@ const simulationResultSchema = new mongoose.Schema({
       cpi: String,
     },
 
-    // 인근 공항
-    // 공항 이름, 도시, 공항 코드
-    nearestAirport: {
-      name: String,
-      city: String,
-      code: String,
-    },
-
     // 초기 정착 지원
-    // 단기/장기 주거 형태, 통신, 계좌
     initialSetup: {
       shortTermHousingOptions: [String],
       longTermHousingPlatforms: [String],
@@ -51,16 +40,12 @@ const simulationResultSchema = new mongoose.Schema({
       bankAccount: String,
     },
     // 취업 현실 정보
-    // 추천 직종, 구직 플랫폼, 언어 조건, 비자 조건
     jobReality: {
-      commonJobs: [String],
       jobSearchPlatforms: [String],
-      jobOpportunity: String,
       languageRequirement: String,
       visaLimitationTips: String,
     },
     // 문화 적응 도움 정보
-    // 한국인 비율, 외국인 비율, 한식당/한국마트 위치 정보
     culturalIntegration: {
       koreanPopulationRate: String,
       foreignResidentRatio: String,

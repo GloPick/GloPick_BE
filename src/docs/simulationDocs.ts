@@ -1,9 +1,9 @@
 // Simulation
 export const simulationSwaggerDocs = {
   paths: {
-    "/api/simulation/{recommendationId}/{profileId}": {
+    "/api/simulation/recommend-cities/{recommendationId}/{profileId}": {
       post: {
-        summary: "시뮬레이션 입력 정보 저장",
+        summary: "선택한 국가 기반으로 도시 3개 추천",
         tags: ["Simulation"],
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -12,15 +12,15 @@ export const simulationSwaggerDocs = {
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "GPT 추천 결과 ID",
+            description: "국가 추천 결과 ID"
           },
           {
             name: "profileId",
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "사용자 이력(Profile) ID",
-          },
+            description: "사용자 프로필 ID"
+          }
         ],
         requestBody: {
           required: true,
@@ -29,104 +29,109 @@ export const simulationSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  selectedRankIndex: { type: "integer", example: 0 },
-                  selectedCountry: { type: "string", example: "Canada" },
-                  budget: {
+                  selectedCountryIndex: { 
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 4,
+                    example: 0,
+                    description: "선택한 국가의 순위 인덱스 (0-4)"
+                  },
+                },
+                required: ["selectedCountryIndex"]
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "도시 추천 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: { type: "integer", example: 200 },
+                    message: { type: "string", example: "도시 추천 성공" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        inputId: {
+                          type: "string",
+                          example: "64f1234567890abcdef12346"
+                        },
+                        selectedCountry: {
+                          type: "string",
+                          example: "Canada"
+                        },
+                        recommendedCities: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string", example: "Vancouver" },
+                              summary: { 
+                                type: "string", 
+                                example: "기후가 온화하고 다문화 환경이 좋음. 한국인 커뮤니티가 활발하며 IT 산업이 발달되어 있어 취업 기회가 많습니다." 
+                              }
+                            }
+                          },
+                          example: [
+                            { name: "Vancouver", summary: "기후가 온화하고 다문화 환경이 좋음" },
+                            { name: "Toronto", summary: "경제 중심지로 취업 기회가 많음" },
+                            { name: "Montreal", summary: "문화가 풍부하고 생활비가 저렴함" }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+            },
+          },
+          400: { description: "유효하지 않은 국가 인덱스" },
+          404: { description: "추천 결과 또는 프로필을 찾을 수 없음" },
+          500: { description: "GPT 호출 실패" },
+        },
+      },
+    },
+    "/api/simulation/input": {
+      post: {
+        summary: "시뮬레이션 추가 정보 입력 및 저장",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  inputId: {
                     type: "string",
-                    enum: [
-                      "300만~500만원",
-                      "500만~800만원",
-                      "800만~1200만원",
-                      "1200만~1500만원",
-                      "1500만원 이상",
-                    ],
-                    example: "500만~800만원",
-                  },
-                  duration: {
-                    type: "string",
-                    enum: [
-                      "1년 미만",
-                      "1~2년",
-                      "3~4년",
-                      "5~10년",
-                      "10년 이상",
-                      "평생 거주",
-                    ],
-                    example: "1~2년",
-                  },
-                  hasLicense: { type: "boolean", example: true },
-                  jobTypes: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                      enum: [
-                        "정규직",
-                        "아르바이트",
-                        "창업/자영업",
-                        "프리랜서",
-                        "기타",
-                      ],
-                    },
-                    example: ["정규직", "프리랜서"],
-                  },
-                  requiredFacilities: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                      enum: [
-                        "대중교통 접근성",
-                        "마트/슈퍼 근접성",
-                        "병원/약국 접근성",
-                        "유치원/학교 접근성",
-                        "반려동물 친화",
-                        "공원/자연환경",
-                        "피트니스/헬스장",
-                        "카페/문화 시설",
-                        "치안",
-                      ],
-                    },
-                    example: ["대중교통 접근성", "병원/약국 접근성"],
-                  },
-                  accompanyingFamily: {
-                    type: "object",
-                    properties: {
-                      spouse: {
-                        type: "number",
-                        minimum: 0,
-                        maximum: 1,
-                        example: 1,
-                      },
-                      children: {
-                        type: "number",
-                        minimum: 0,
-                        maximum: 10,
-                        example: 2,
-                      },
-                      parents: {
-                        type: "number",
-                        minimum: 0,
-                        maximum: 2,
-                        example: 0,
-                      },
-                    },
-                  },
-                  visaStatus: {
-                    type: "string",
-                    enum: ["있음", "없음"],
-                    example: "없음",
-                  },
-                  additionalNotes: {
-                    type: "string",
-                    example: "추운 나라 희망",
+                    example: "64f1234567890abcdef12346",
+                    description: "도시 추천에서 받은 input ID"
                   },
                   selectedCity: {
                     type: "string",
                     example: "Vancouver",
+                    description: "사용자가 선택한 도시"
                   },
-                  recommendedCities: {
-                    type: "array",
-                    items: { type: "string" },
-                    example: ["Vancouver", "Toronto", "Montreal"],
+                  initialBudget: {
+                    type: "string",
+                    enum: [
+                      "300만~500만원",
+                      "500만~800만원", 
+                      "800만~1200만원",
+                      "1200만~1500만원",
+                      "1500만원 이상"
+                    ],
+                    example: "500만~800만원",
+                    description: "초기 정착 예산"
+                  },
+                  requiredFacilities: {
+                    type: "string",
+                    example: "대중교통 접근성, 병원/약국 접근성, 한식당/마트",
+                    description: "필요한 시설 및 서비스 (자유 입력)"
                   },
                   departureAirport: {
                     type: "string",
@@ -137,118 +142,50 @@ export const simulationSwaggerDocs = {
                       "제주국제공항",
                       "청주국제공항",
                       "대구국제공항",
-                      "무안국제공항",
+                      "무안국제공항"
                     ],
                     example: "인천국제공항",
-                  },
+                    description: "출발 공항"
+                  }
                 },
+                required: ["inputId", "selectedCity", "initialBudget", "requiredFacilities", "departureAirport"]
               },
             },
           },
         },
         responses: {
-          201: { description: "시뮬레이션 입력 정보 저장 성공" },
-          400: {
-            description: "중복된 시뮬레이션 입력",
+          201: {
+            description: "시뮬레이션 입력 정보 저장 성공",
             content: {
               "application/json": {
                 schema: {
                   type: "object",
                   properties: {
+                    code: { type: "integer", example: 201 },
+                    message: { type: "string", example: "시뮬레이션 입력 정보 저장 성공" },
                     data: {
                       type: "object",
                       properties: {
-                        inputId: {
-                          type: "string",
-                          example: "665abc123...",
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+                        inputId: { type: "string", example: "64f1234567890abcdef12346" },
+                        selectedCountry: { type: "string", example: "Canada" },
+                        selectedCity: { type: "string", example: "Vancouver" },
+                        initialBudget: { type: "string", example: "500만~800만원" },
+                        requiredFacilities: { type: "string", example: "대중교통 접근성, 병원/약국 접근성" },
+                        departureAirport: { type: "string", example: "인천국제공항" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
-
+          400: { description: "잘못된 요청 데이터" },
+          404: { description: "입력 정보를 찾을 수 없음" },
           500: { description: "서버 오류" },
         },
       },
     },
-    "/api/simulation/{id}/cities": {
-      post: {
-        summary: "GPT 기반 도시 3개 추천",
-        tags: ["Simulation"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "SimulationInput ID",
-          },
-        ],
-        responses: {
-          200: {
-            description: "도시 추천 성공",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: {
-                        type: "array",
-                        items: { type: "string" },
-                        example: ["밴쿠버", "토론토", "몬트리올"],
-                      },
-                      summary: {
-                        type: "string",
-                        example: "기후 온화하고 교통 좋음",
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          400: {
-            description: "이미 도시 추천이 완료된 입력",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    message: {
-                      type: "string",
-                      example: "이미 도시 추천이 완료된 입력입니다.",
-                    },
-                    data: {
-                      type: "object",
-                      properties: {
-                        recommendedCities: {
-                          type: "array",
-                          items: { type: "string" },
-                          example: ["밴쿠버", "토론토", "몬트리올"],
-                        },
-                        inputId: {
-                          type: "string",
-                          example: "664df123abc...",
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          404: { description: "선택한 추천 결과를 찾을 수 없습니다." },
-          500: { description: "GPT 호출 실패" },
-        },
-      },
-    },
-    "/api/simulation/{id}/gpt": {
+    "/api/simulation/{id}/generate": {
       post: {
         summary: "선택한 도시 기반 시뮬레이션 생성 및 저장",
         tags: ["Simulation"],
@@ -259,7 +196,7 @@ export const simulationSwaggerDocs = {
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "SimulationInput ID",
+            description: "SimulationInput ID (도시 추천에서 받은 inputId)",
           },
         ],
         requestBody: {
@@ -269,8 +206,46 @@ export const simulationSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  selectedCityIndex: { type: "number", example: "1" },
+                  selectedCityIndex: {
+                    type: "integer",
+                    minimum: 0,
+                    maximum: 2,
+                    example: 0,
+                    description: "선택한 도시의 인덱스 (0-2)"
+                  },
+                  initialBudget: {
+                    type: "string",
+                    enum: [
+                      "300만~500만원",
+                      "500만~800만원", 
+                      "800만~1200만원",
+                      "1200만~1500만원",
+                      "1500만원 이상"
+                    ],
+                    example: "500만~800만원",
+                    description: "초기 정착 예산"
+                  },
+                  requiredFacilities: {
+                    type: "string",
+                    example: "대중교통 접근성, 병원/약국 접근성, 한식당/마트",
+                    description: "필요한 시설 및 서비스 (자유 입력)"
+                  },
+                  departureAirport: {
+                    type: "string",
+                    enum: [
+                      "인천국제공항",
+                      "김포국제공항",
+                      "김해국제공항",
+                      "제주국제공항",
+                      "청주국제공항",
+                      "대구국제공항",
+                      "무안국제공항"
+                    ],
+                    example: "인천국제공항",
+                    description: "출발 공항"
+                  }
                 },
+                required: ["selectedCityIndex", "initialBudget", "requiredFacilities", "departureAirport"]
               },
             },
           },
@@ -297,91 +272,66 @@ export const simulationSwaggerDocs = {
                         result: {
                           type: "object",
                           properties: {
-                            country: { type: "string", example: "미국" },
+                            country: { type: "string", example: "캐나다" },
                             recommendedCity: {
                               type: "string",
-                              example: "매디슨",
+                              example: "밴쿠버",
                             },
                             localInfo: {
                               type: "object",
                               properties: {
-                                publicTransport: {
-                                  type: "string",
-                                  example:
-                                    "버스가 주요 교통수단입니다. 하지만 운전면허가 있으므로 차량 이용이 가능합니다.",
-                                },
-                                safetyLevel: {
-                                  type: "string",
-                                  example:
-                                    "대한민국과 비교하여 치안이 좋으나, 항상 주의가 필요합니다.",
-                                },
-                                climateSummary: {
-                                  type: "string",
-                                  example:
-                                    "사계절이 뚜렷하며 겨울에는 매우 추워집니다.",
-                                },
-                                koreanCommunity: {
-                                  type: "string",
-                                  example:
-                                    "한인 마트와 한식당이 몇 군데 있습니다.",
-                                },
                                 essentialFacilities: {
                                   type: "array",
                                   items: { type: "string" },
                                   example: [
-                                    "University Hospital",
-                                    "Woodman's Food Market",
-                                    "Chicago Consulate General",
+                                    "VGH (Vancouver General Hospital)",
+                                    "T&T Supermarket (한국 식재료)",
+                                    "SkyTrain 역"
                                   ],
+                                },
+                                publicTransport: {
+                                  type: "string",
+                                  example: "SkyTrain과 버스가 잘 연결되어 있어 대중교통 이용이 편리합니다.",
+                                },
+                                safetyLevel: {
+                                  type: "string",
+                                  example: "캐나다는 안전한 국가로 유명하며, 밴쿠버도 비교적 안전합니다.",
+                                },
+                                climateSummary: {
+                                  type: "string",
+                                  example: "온화한 해양성 기후로 겨울에도 영하로 잘 내려가지 않습니다.",
+                                },
+                                koreanCommunity: {
+                                  type: "string",
+                                  example: "한인타운이 발달되어 있어 한국 음식과 서비스를 쉽게 이용할 수 있습니다.",
                                 },
                                 culturalTips: {
                                   type: "string",
-                                  example:
-                                    "현지인들은 친절하며, 다양한 문화를 존중합니다.",
+                                  example: "다문화를 존중하는 문화가 잘 정착되어 있습니다.",
                                 },
                                 warnings: {
                                   type: "string",
-                                  example:
-                                    "겨울철 눈길 운전에 주의해야 합니다.",
+                                  example: "집값이 비싸므로 예산을 충분히 준비하세요.",
                                 },
                               },
                             },
                             estimatedMonthlyCost: {
                               type: "object",
                               properties: {
-                                housing: { type: "string", example: "100만원" },
-                                food: { type: "string", example: "40만원" },
-                                transportation: {
-                                  type: "string",
-                                  example: "20만원",
-                                },
-                                etc: { type: "string", example: "30만원" },
-                                total: { type: "string", example: "190만원" },
-                                oneYearCost: {
-                                  type: "string",
-                                  example: "2280만원",
-                                },
+                                housing: { type: "string", example: "150만원" },
+                                food: { type: "string", example: "60만원" },
+                                transportation: { type: "string", example: "15만원" },
+                                etc: { type: "string", example: "40만원" },
+                                total: { type: "string", example: "265만원" },
+                                oneYearCost: { type: "string", example: "3180만원" },
                                 costCuttingTips: {
                                   type: "string",
-                                  example:
-                                    "대중교통을 이용하거나, 중고 가구를 활용하는 것이 좋습니다.",
+                                  example: "룸메이트와 함께 거주하거나 외곽 지역을 고려해보세요.",
                                 },
                                 cpi: {
                                   type: "string",
-                                  example:
-                                    "대한민국 보다 1.2배 정도 물가가 높은 편입니다.",
+                                  example: "한국 대비 약 1.3배 정도 물가가 높습니다.",
                                 },
-                              },
-                            },
-                            nearestAirport: {
-                              type: "object",
-                              properties: {
-                                name: {
-                                  type: "string",
-                                  example: "Dane County Regional Airport",
-                                },
-                                city: { type: "string", example: "매디슨" },
-                                code: { type: "string", example: "MSN" },
                               },
                             },
                             initialSetup: {
@@ -390,22 +340,20 @@ export const simulationSwaggerDocs = {
                                 shortTermHousingOptions: {
                                   type: "array",
                                   items: { type: "string" },
-                                  example: ["호텔", "호스텔", "에어비앤비"],
+                                  example: ["호스텔", "에어비앤비", "단기 렌탈"],
                                 },
                                 longTermHousingPlatforms: {
                                   type: "array",
                                   items: { type: "string" },
-                                  example: ["Zillow", "Apartments.com"],
+                                  example: ["Craigslist", "PadMapper", "Kijiji"],
                                 },
                                 mobilePlan: {
                                   type: "string",
-                                  example:
-                                    "선불 심카드가 편리합니다 (예: AT&T, T-Mobile)",
+                                  example: "Fido, Rogers 등에서 선불 또는 후불 요금제 선택 가능",
                                 },
                                 bankAccount: {
                                   type: "string",
-                                  example:
-                                    "여권과 주소 증빙만으로 계좌 개설이 가능합니다.",
+                                  example: "TD Bank, RBC 등에서 신분증으로 계좌 개설 가능",
                                 },
                               },
                             },
@@ -416,22 +364,24 @@ export const simulationSwaggerDocs = {
                                   type: "array",
                                   items: { type: "string" },
                                   example: [
-                                    "원격 근무가 가능한 IT, 마케팅, 디자인 등의 직종이 추천됩니다.",
+                                    "IT 개발자",
+                                    "마케팅 전문가", 
+                                    "서비스업",
+                                    "한국어 강사"
                                   ],
                                 },
                                 jobSearchPlatforms: {
                                   type: "array",
                                   items: { type: "string" },
-                                  example: ["Indeed", "LinkedIn", "Glassdoor"],
+                                  example: ["Indeed", "LinkedIn", "Workopolis"],
                                 },
                                 languageRequirement: {
                                   type: "string",
-                                  example: "영어 중급 이상 필수",
+                                  example: "영어 중급 이상 필수, 불어 가능하면 더 유리",
                                 },
                                 visaLimitationTips: {
                                   type: "string",
-                                  example:
-                                    "취업 비자는 고용주 스폰서가 필요합니다.",
+                                  example: "워킹홀리데이 비자나 취업 비자 필요",
                                 },
                               },
                             },
@@ -440,19 +390,18 @@ export const simulationSwaggerDocs = {
                               properties: {
                                 koreanPopulationRate: {
                                   type: "string",
-                                  example:
-                                    "전체 인구의 약 0.5% 이므로 한국인이 많지 않습니다.",
+                                  example: "전체 인구의 약 2% 정도로 한국인 커뮤니티가 활발합니다.",
                                 },
                                 foreignResidentRatio: {
                                   type: "string",
-                                  example: "8.5%",
+                                  example: "45%",
                                 },
                                 koreanResourcesLinks: {
                                   type: "array",
                                   items: { type: "string" },
                                   example: [
-                                    "https://www.koreanmadison.org",
-                                    "https://www.facebook.com/groups/2204690880",
+                                    "https://www.vankoreancommunity.com",
+                                    "https://www.facebook.com/groups/vancouver.korean"
                                   ],
                                 },
                               },
@@ -464,13 +413,11 @@ export const simulationSwaggerDocs = {
                           properties: {
                             googleFlights: {
                               type: "string",
-                              example:
-                                "https://www.google.com/travel/flights?q=Flights from Incheon%20International%20Airport%20(ICN) to MSN/one way",
+                              example: "https://www.google.com/travel/flights?q=Flights from ICN to YVR/one way",
                             },
                             skyscanner: {
                               type: "string",
-                              example:
-                                "https://www.skyscanner.co.kr/transport/flights/icn/msn/",
+                              example: "https://www.skyscanner.co.kr/transport/flights/icn/yvr/",
                             },
                           },
                         },
@@ -481,92 +428,9 @@ export const simulationSwaggerDocs = {
               },
             },
           },
-          400: { description: "도시 선택 안 됨" },
+          400: { description: "필수 정보 누락" },
           404: { description: "입력 정보 없음" },
           500: { description: "GPT 호출 또는 저장 실패" },
-        },
-      },
-    },
-
-    "/api/simulation/{id}/flight-links": {
-      get: {
-        summary: "항공권 링크 생성",
-        tags: ["Simulation"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "SimulationInput ID",
-          },
-        ],
-        responses: {
-          200: {
-            description: "항공권 링크 생성 완료",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    code: {
-                      type: "integer",
-                      example: 200,
-                    },
-                    message: {
-                      type: "string",
-                      example: "항공권 링크 생성 완료",
-                    },
-                    data: {
-                      type: "object",
-                      properties: {
-                        simulation: {
-                          type: "object",
-                          properties: {
-                            _id: { type: "string", example: "6632abc123..." },
-                            departureAirport: {
-                              type: "string",
-                              example: "인천국제공항",
-                            },
-                            selectedCity: {
-                              type: "string",
-                              example: "Vancouver",
-                            },
-                          },
-                        },
-
-                        flightLinks: {
-                          type: "object",
-                          properties: {
-                            googleFlights: {
-                              type: "string",
-                              example:
-                                "https://www.google.com/travel/flights?q=Flights from ICN to Vancouver/one way",
-                            },
-                            skyscanner: {
-                              type: "string",
-                              example:
-                                "https://www.skyscanner.co.kr/transport/flights/icn/vancouver/",
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          400: {
-            description: "출발지 또는 도착지 정보 누락",
-          },
-          404: {
-            description: "시뮬레이션 정보 없음",
-          },
-          500: {
-            description: "서버 오류",
-          },
         },
       },
     },
@@ -601,10 +465,6 @@ export const simulationSwaggerDocs = {
                             type: "string",
                             example: "663fe59a5230fdd9c41a67af",
                           },
-                          job: {
-                            type: "string",
-                            example: "한식 요리사",
-                          },
                           country: {
                             type: "string",
                             example: "캐나다",
@@ -613,9 +473,13 @@ export const simulationSwaggerDocs = {
                             type: "string",
                             example: "밴쿠버",
                           },
-                          migrationSuitability: {
-                            type: "number",
-                            example: 76,
+                          initialBudget: {
+                            type: "string",
+                            example: "500만~800만원",
+                          },
+                          createdAt: {
+                            type: "string",
+                            example: "2024-01-01T00:00:00.000Z",
                           },
                         },
                       },

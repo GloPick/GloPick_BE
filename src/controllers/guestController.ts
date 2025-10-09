@@ -6,10 +6,55 @@ import {
 import { CountryRecommendationService } from "../services/countryRecommendationService";
 import { asyncHandler } from "../utils/asyncHandler";
 
+// saveWeights 함수 import (가중치 사용할 수 있도록)
+let savedWeights = { language: 30, salary: 30, job: 40 };
+export const saveWeights = (weights: { language: number; salary: number; job: number }) => {
+  savedWeights = weights;
+};
+export const getSavedWeights = () => savedWeights;
+
 // 비회원 국가 추천 요청 처리 (회원과 동일한 로직, DB 저장 없음)
 export const getGuestCountryRecommendations = asyncHandler(
   async (req: Request, res: Response) => {
-    const userProfile: UserCareerProfile = req.body;
+    const { userProfile, weights } = req.body;
+
+    // 가중치 필수 검증
+    if (!weights || 
+        weights.language === undefined || 
+        weights.salary === undefined || 
+        weights.job === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "가중치 정보가 필요합니다. language, salary, job 가중치를 모두 입력해주세요.",
+        data: {
+          required: {
+            language: "언어 가중치 (숫자)",
+            salary: "연봉 가중치 (숫자)", 
+            job: "직무 가중치 (숫자)"
+          },
+          received: weights
+        }
+      });
+    }
+
+    const finalWeights = {
+      language: weights.language,
+      salary: weights.salary,
+      job: weights.job,
+    };
+
+    // 가중치 검증
+    const totalWeight = finalWeights.language + finalWeights.salary + finalWeights.job;
+    if (totalWeight !== 100) {
+      return res.status(400).json({
+        success: false,
+        message: "가중치의 합이 100이어야 합니다.",
+        data: { 
+          currentTotal: totalWeight,
+          weights: finalWeights
+        },
+      });
+    }
 
     // 입력 데이터 검증
     const validationError = validateGuestProfile(userProfile);
@@ -24,10 +69,13 @@ export const getGuestCountryRecommendations = asyncHandler(
       language: userProfile.language,
       expectedSalary: userProfile.expectedSalary,
       jobField: userProfile.jobField,
-      priorities: userProfile.priorities,
+      weights: finalWeights,
     });
 
     try {
+      // 가중치를 서비스에서 사용할 수 있도록 저장
+      saveWeights(finalWeights);
+
       // 국가 추천 서비스 호출 (회원과 동일한 로직)
       const recommendations: CountryRecommendation[] =
         await CountryRecommendationService.getTopCountryRecommendations(
@@ -42,14 +90,9 @@ export const getGuestCountryRecommendations = asyncHandler(
             language: userProfile.language,
             expectedSalary: userProfile.expectedSalary,
             jobField: userProfile.jobField,
-            priorities: userProfile.priorities,
           },
           recommendations,
-          appliedWeights: {
-            first: 0.5,
-            second: 0.3,
-            third: 0.2,
-          },
+          appliedWeights: finalWeights,
           timestamp: new Date().toISOString(),
           note: "비회원은 국가 추천까지만 제공됩니다. 시뮬레이션 기능을 이용하려면 회원가입이 필요합니다.",
         },
@@ -87,28 +130,6 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
     return "ISCO-08 표준 직무 분류 코드를 선택해주세요.";
   }
 
-  if (!profile.priorities) {
-    return "우선순위를 설정해주세요.";
-  }
-
-  // 우선순위 검증
-  const { first, second, third } = profile.priorities;
-  const validPriorities = ["language", "salary", "job"];
-
-  if (
-    !validPriorities.includes(first) ||
-    !validPriorities.includes(second) ||
-    !validPriorities.includes(third)
-  ) {
-    return "우선순위는 language, salary, job 중에서 선택해주세요.";
-  }
-
-  // 우선순위 중복 검증
-  const prioritySet = new Set([first, second, third]);
-  if (prioritySet.size !== 3) {
-    return "우선순위는 서로 다른 값이어야 합니다.";
-  }
-
   // 연봉 범위 검증
   if (profile.expectedSalary < 10000 || profile.expectedSalary > 500000) {
     return "희망 연봉은 $10,000 ~ $500,000 범위로 입력해주세요.";
@@ -131,12 +152,3 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
 
   return null; // 검증 통과
 }
-
-export const deprecatedNotice = async (req: Request, res: Response) => {
-  res.status(410).json({
-    code: 410,
-    message:
-      "이 기능은 더 이상 지원되지 않습니다. /api/guest/recommend를 사용하세요.",
-    data: null,
-  });
-};

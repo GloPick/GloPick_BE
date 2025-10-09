@@ -117,6 +117,31 @@ const userProfileSchema = new mongoose.Schema({
     },
   },
 
+  // 가중치 설정 (합계 100%)
+  weights: {
+    languageWeight: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 30
+    },
+    salaryWeight: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 30
+    },
+    jobWeight: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 40
+    }
+  },
+
   additionalNotes: { type: String }, // 추가 희망 사항
   createdAt: { type: Date, default: Date.now },
 });

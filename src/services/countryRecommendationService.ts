@@ -6,14 +6,22 @@ import {
 } from "../types/countryRecommendation";
 import { ExternalAPIService } from "./externalAPIService";
 
-export class CountryRecommendationService {
-  // 가중치 상수
-  private static readonly PRIORITY_WEIGHTS = {
-    first: 0.5, // 1순위
-    second: 0.3, // 2순위
-    third: 0.2, // 3순위
-  };
+interface Weights {
+  language: number;
+  salary: number;
+  job: number;
+}
 
+let userWeights: Weights = { language: 0, salary: 0, job: 0 };
+
+export const saveWeights = (weights: Weights) => {
+  userWeights = weights;
+  console.log("Weights saved:", userWeights);
+};
+
+export const getWeights = () => userWeights;
+
+export class CountryRecommendationService {
   // 메인 추천 로직
   static async getTopCountryRecommendations(
     userProfile: UserCareerProfile
@@ -31,21 +39,46 @@ export class CountryRecommendationService {
         userProfile
       );
 
-      // 3. 가중치 적용하여 최종 점수 계산
-      const weightedCountries = this.applyWeights(
-        scoredCountries,
-        userProfile.priorities
-      );
+      // 3. 저장된 가중치 가져오기
+      const userWeights = getWeights();
+      console.log("적용할 가중치:", userWeights);
+      
+      // 가중치가 설정되지 않았다면 기본값 사용
+      const finalWeights = {
+        language: userWeights.language || 33,
+        salary: userWeights.salary || 33,
+        job: userWeights.job || 34,
+      };
+      
+      console.log("최종 가중치:", finalWeights);
 
-      // 4. 상위 3개 국가 선별
+      // 4. 사용자 입력 가중치 적용
+      const weightedCountries = this.applyDynamicWeights(scoredCountries, finalWeights);
+
+      // 5. 상위 3개 국가 선별
       const topCountries = this.selectTopCountries(weightedCountries, 3);
 
-      // 5. 추천 결과 포맷팅
-      return this.formatRecommendations(topCountries, userProfile);
+      // 6. 추천 결과 포맷팅
+      return this.formatRecommendations(topCountries, userProfile, finalWeights);
     } catch (error) {
       console.error("국가 추천 처리 중 오류:", error);
       throw new Error("국가 추천을 처리하는 중 오류가 발생했습니다.");
     }
+  }
+
+  // 사용자 입력 가중치 적용 로직 수정
+  private static applyDynamicWeights(
+    scoredCountries: ScoredCountry[],
+    weights: Weights
+  ): ScoredCountry[] {
+    return scoredCountries.map((country) => {
+      const totalScore =
+        country.scores.languageScore * (weights.language / 100) +
+        country.scores.salaryScore * (weights.salary / 100) +
+        country.scores.jobScore * (weights.job / 100);
+
+      return { ...country, weightedScore: totalScore };
+    });
   }
 
   // 각 국가별 개별 점수 계산
@@ -327,36 +360,6 @@ export class CountryRecommendationService {
     return iscoJobFieldMap[iscoCode]?.[countryCode] || 0;
   }
 
-  // 우선순위별 가중치 적용
-  private static applyWeights(
-    scoredCountries: ScoredCountry[],
-    priorities: { first: string; second: string; third: string }
-  ): ScoredCountry[] {
-    return scoredCountries.map((scored) => {
-      const scores = scored.scores;
-      let weightedScore = 0;
-
-      // 1순위, 2순위, 3순위에 따른 가중치 적용
-      const scoreMap = {
-        language: scores.languageScore,
-        salary: scores.salaryScore,
-        job: scores.jobScore,
-      };
-
-      weightedScore +=
-        (scoreMap as any)[priorities.first] * this.PRIORITY_WEIGHTS.first;
-      weightedScore +=
-        (scoreMap as any)[priorities.second] * this.PRIORITY_WEIGHTS.second;
-      weightedScore +=
-        (scoreMap as any)[priorities.third] * this.PRIORITY_WEIGHTS.third;
-
-      return {
-        ...scored,
-        weightedScore,
-      };
-    });
-  }
-
   // 상위 N개 국가 선별
   private static selectTopCountries(
     weightedCountries: ScoredCountry[],
@@ -370,20 +373,15 @@ export class CountryRecommendationService {
   // 최종 추천 결과 포맷팅
   private static formatRecommendations(
     topCountries: ScoredCountry[],
-    userProfile: UserCareerProfile
+    userProfile: UserCareerProfile,
+    appliedWeights: Weights
   ): CountryRecommendation[] {
     return topCountries.map((scored, index) => {
-      const { first, second, third } = userProfile.priorities;
-      const appliedWeights = {
-        language: 0,
-        salary: 0,
-        job: 0,
+      const normalizedWeights = {
+        language: appliedWeights.language / 100,
+        salary: appliedWeights.salary / 100,
+        job: appliedWeights.job / 100,
       };
-
-      // 적용된 가중치 계산
-      (appliedWeights as any)[first] = this.PRIORITY_WEIGHTS.first;
-      (appliedWeights as any)[second] = this.PRIORITY_WEIGHTS.second;
-      (appliedWeights as any)[third] = this.PRIORITY_WEIGHTS.third;
 
       return {
         rank: index + 1,
@@ -393,7 +391,7 @@ export class CountryRecommendationService {
           languageScore: Math.round(scored.scores.languageScore * 100) / 100,
           salaryScore: Math.round(scored.scores.salaryScore * 100) / 100,
           jobScore: Math.round(scored.scores.jobScore * 100) / 100,
-          appliedWeights,
+          appliedWeights: normalizedWeights,
         },
         reasons: this.generateReasons(scored, userProfile),
       };

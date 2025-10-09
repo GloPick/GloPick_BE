@@ -99,13 +99,6 @@ export const PRIORITY_OPTIONS = {
   },
 } as const;
 
-// 우선순위 가중치
-export const PRIORITY_WEIGHTS = {
-  first: 0.5,  // 1순위 가중치
-  second: 0.3, // 2순위 가중치  
-  third: 0.2,  // 3순위 가중치
-} as const;
-
 // 타입 정의
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 export type JobFieldCode = typeof JOB_FIELDS[number]["code"];

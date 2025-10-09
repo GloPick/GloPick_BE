@@ -1,5 +1,4 @@
 import { Response } from "express";
-import bcrypt from "bcrypt";
 import User from "../models/User";
 import UserProfile from "../models/UserProfile";
 import SimulationInput from "../models/simulationInput";
@@ -286,10 +285,28 @@ export const getUserRecommendations = async (
           country: country.country,
           score: country.score,
           rank: country.rank,
-          details: country.details,
-          economicData: country.economicData,
-          countryInfo: country.countryInfo,
+          details: {
+            economicScore: country.details?.economicScore || 0,
+            employmentScore: country.details?.employmentScore || 0,
+            languageScore: country.details?.languageScore || 0,
+            salaryScore: country.details?.salaryScore || 0,
+          },
+          economicData: {
+            gdpPerCapita: country.economicData?.gdpPerCapita || null,
+            employmentRate: country.economicData?.employmentRate || null,
+            averageSalary: country.economicData?.averageSalary || null,
+          },
+          countryInfo: {
+            region: country.countryInfo?.region || null,
+            languages: country.countryInfo?.languages || [],
+            population: country.countryInfo?.population || null,
+          },
         })),
+        weights: {
+          language: recObj.weights?.language || 0,
+          salary: recObj.weights?.salary || 0,
+          job: recObj.weights?.job || 0,
+        },
         createdAt: recObj.createdAt,
       };
     });
@@ -347,10 +364,28 @@ export const getRecommendationsByProfileId = async (
           country: country.country,
           score: country.score,
           rank: country.rank,
-          details: country.details,
-          economicData: country.economicData,
-          countryInfo: country.countryInfo,
+          details: {
+            economicScore: country.details?.economicScore || 0,
+            employmentScore: country.details?.employmentScore || 0,
+            languageScore: country.details?.languageScore || 0,
+            salaryScore: country.details?.salaryScore || 0,
+          },
+          economicData: {
+            gdpPerCapita: country.economicData?.gdpPerCapita || null,
+            employmentRate: country.economicData?.employmentRate || null,
+            averageSalary: country.economicData?.averageSalary || null,
+          },
+          countryInfo: {
+            region: country.countryInfo?.region || null,
+            languages: country.countryInfo?.languages || [],
+            population: country.countryInfo?.population || null,
+          },
         })),
+        weights: {
+          language: recObj.weights?.language || 0,
+          salary: recObj.weights?.salary || 0,
+          job: recObj.weights?.job || 0,
+        },
         createdAt: recObj.createdAt,
       };
     });
@@ -394,16 +429,10 @@ export const getUserSimulationInputs = async (
       return {
         inputId: obj._id,
         selectedCountry: obj.selectedCountry,
-        budget: obj.budget,
-        duration: obj.duration,
-        hasLicense: obj.hasLicense,
-        jobTypes: obj.jobTypes,
+        initialBudget: obj.initialBudget,
         requiredFacilities: obj.requiredFacilities,
-        accompanyingFamily: obj.accompanyingFamily,
-        visaStatus: obj.visaStatus,
-        additionalNotes: obj.additionalNotes,
-        recommendedCities: obj.recommendedCities,
         departureAirport: obj.departureAirport,
+        recommendedCities: obj.recommendedCities,
         selectedCity: obj.selectedCity,
       };
     });

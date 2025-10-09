@@ -5,20 +5,21 @@ import {
   saveSimulationInput,
   generateAndSaveSimulation,
   recommendCities,
+  getSimulationFlightLinks,
+  getSimulationList,
 } from "../controllers/simulationController";
-import { getSimulationFlightLinks } from "../controllers/simulationController";
-import { getSimulationList } from "../controllers/simulationController";
 
 const router = express.Router();
 
-// GPT 기반 시뮬레이션 생성
-router.post("/:id/gpt", protect, asyncHandler(generateAndSaveSimulation));
+// === 새로운 워크플로우 ===
+// 1. 도시 추천 (국가 추천 이후 바로 실행)
+router.post("/recommend-cities/:recommendationId/:profileId", protect, asyncHandler(recommendCities));
 
-// 도시 3개 추천
-router.post("/:id/cities", protect, asyncHandler(recommendCities));
+// 2. 시뮬레이션 추가 정보 입력 (도시 선택 후)
+router.post("/input", protect, asyncHandler(saveSimulationInput));
 
-// 추가 정보 입력 (GPT 추천 대신 직접 국가 선택 방식으로 변경)
-router.post("/:profileId", protect, asyncHandler(saveSimulationInput));
+// 3. GPT 기반 시뮬레이션 생성
+router.post("/:id/generate", protect, asyncHandler(generateAndSaveSimulation));
 
 // 항공권 링크 포함 시뮬레이션 결과 조회
 router.get(
@@ -27,7 +28,7 @@ router.get(
   asyncHandler(getSimulationFlightLinks)
 );
 
-// 시뮬레이션 요약 보기
-router.get("/:simulationId", protect, asyncHandler(getSimulationList));
+// 시뮬레이션 요약 리스트 조회
+router.get("/list", protect, asyncHandler(getSimulationList));
 
 export default router;

@@ -11,6 +11,7 @@ import {
 } from "../services/gptsimulationService";
 import { createFlightLinks } from "../utils/flightLinkGenerator";
 import SimulationList from "../models/simulationList";
+import { JOB_FIELDS } from "../constants/dropdownOptions";
 
 // 언어 능력 평가 함수 (단일 언어로 변경)
 const assessLanguageLevel = (language: string): string => {
@@ -68,11 +69,14 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
     }
 
     let actualSelectedCity: string;
-    
+
     // 숫자인 경우 인덱스로 처리
     if (!isNaN(Number(selectedCity))) {
       const cityIndex = Number(selectedCity);
-      if (cityIndex < 0 || cityIndex >= (input.recommendedCities?.length || 0)) {
+      if (
+        cityIndex < 0 ||
+        cityIndex >= (input.recommendedCities?.length || 0)
+      ) {
         return res.status(400).json({
           code: 400,
           message: "유효하지 않은 도시 인덱스입니다.",
@@ -153,7 +157,8 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
 
   try {
     // 국가 추천 결과 조회
-    const CountryRecommendationResult = require("../models/countryRecommendationResult").default;
+    const CountryRecommendationResult =
+      require("../models/countryRecommendationResult").default;
     const recommendation = await CountryRecommendationResult.findOne({
       _id: recommendationId,
       user: req.user!._id,
@@ -169,7 +174,10 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
     }
 
     // 선택된 인덱스 검증
-    if (selectedCountryIndex < 0 || selectedCountryIndex >= recommendation.recommendations.length) {
+    if (
+      selectedCountryIndex < 0 ||
+      selectedCountryIndex >= recommendation.recommendations.length
+    ) {
       return res.status(400).json({
         code: 400,
         message: "유효하지 않은 국가 인덱스입니다.",
@@ -177,7 +185,8 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const selectedCountry = recommendation.recommendations[selectedCountryIndex].country;
+    const selectedCountry =
+      recommendation.recommendations[selectedCountryIndex].country;
 
     // 프로필 정보 조회
     const profile = await UserProfile.findById(profileId);
@@ -189,8 +198,11 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // GPT를 통한 상세 도시 추천
-    const userJob = profile.desiredJob?.mainCategory || profile.desiredJob?.subCategory;
+    // GPT를 통한 상세 도시 추천 (ISCO 코드 사용)
+    const jobCode = profile.desiredJob || "2"; // 기본값: 전문가
+    const jobField =
+      JOB_FIELDS.find((field) => field.code === jobCode) || JOB_FIELDS[1];
+    const userJob = jobField.nameKo;
     const userLanguage = profile.language;
     const cityRecommendations = await getSimpleCityRecommendations(
       selectedCountry,
@@ -234,7 +246,12 @@ export const generateAndSaveSimulation = async (
   res: Response
 ) => {
   const { id } = req.params;
-  const { selectedCityIndex, initialBudget, requiredFacilities, departureAirport } = req.body;
+  const {
+    selectedCityIndex,
+    initialBudget,
+    requiredFacilities,
+    departureAirport,
+  } = req.body;
 
   try {
     const input = await SimulationInput.findOne({
@@ -251,7 +268,10 @@ export const generateAndSaveSimulation = async (
     }
 
     // 필수 필드 검증
-    if (typeof selectedCityIndex !== "number" || !input.recommendedCities[selectedCityIndex]) {
+    if (
+      typeof selectedCityIndex !== "number" ||
+      !input.recommendedCities[selectedCityIndex]
+    ) {
       return res.status(400).json({
         code: 400,
         message: "유효한 도시 인덱스가 필요합니다.",
@@ -318,10 +338,7 @@ export const generateAndSaveSimulation = async (
     const gptResult = await generateSimulationResponse(input);
     const arrivalAirportCode = gptResult?.nearestAirport?.code || selectedCity;
 
-    const flightLinks = createFlightLinks(
-      departureAirport,
-      arrivalAirportCode
-    );
+    const flightLinks = createFlightLinks(departureAirport, arrivalAirportCode);
 
     const { ...restResult } = gptResult;
 
@@ -334,13 +351,16 @@ export const generateAndSaveSimulation = async (
       },
     });
 
-    // 사용자 프로필에서 직무 정보 가져오기 (GPT 추천 대신)
+    // 사용자 프로필에서 직무 정보 가져오기 (ISCO 코드 사용)
     const userProfile = await UserProfile.findOne({
       _id: input.profile,
       user: req.user!._id,
     });
 
-    const desiredJob = userProfile?.desiredJob?.mainCategory || "미지정";
+    const jobCode = userProfile?.desiredJob || "2"; // 기본값: 전문가
+    const jobField =
+      JOB_FIELDS.find((field) => field.code === jobCode) || JOB_FIELDS[1];
+    const desiredJob = jobField.nameKo;
 
     const isAlreadyExist = await SimulationList.findOne({
       user: req.user!._id,
@@ -462,7 +482,10 @@ export const getSimulationList = async (req: AuthRequest, res: Response) => {
 };
 
 // 새로운 플로우: 국가 선택 후 GPT를 통한 도시 추천
-export const selectCountryAndGetCities = async (req: AuthRequest, res: Response) => {
+export const selectCountryAndGetCities = async (
+  req: AuthRequest,
+  res: Response
+) => {
   try {
     const { selectedCountry, profileId } = req.body;
 
@@ -483,10 +506,13 @@ export const selectCountryAndGetCities = async (req: AuthRequest, res: Response)
       });
     }
 
-    // GPT를 통한 도시 추천
+    // GPT를 통한 도시 추천 (ISCO 코드 사용)
+    const jobCode = profile.desiredJob || "2"; // 기본값: 전문가
+    const jobField =
+      JOB_FIELDS.find((field) => field.code === jobCode) || JOB_FIELDS[1];
     const recommendedCities = await getDetailedCityRecommendations(
       selectedCountry,
-      profile.desiredJob?.mainCategory || "기타",
+      jobField.nameKo,
       profile.language
     );
 

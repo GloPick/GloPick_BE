@@ -1,6 +1,71 @@
 //Profile
 export const profileSwaggerDocs = {
   paths: {
+    "/api/profile/options": {
+      get: {
+        summary: "프로필 생성을 위한 드롭다운 옵션 조회",
+        description:
+          "언어, 직무 분류, 연봉 범위 등 프로필 생성에 필요한 드롭다운 옵션들을 반환합니다.",
+        tags: ["Profile"],
+        responses: {
+          200: {
+            description: "드롭다운 옵션 조회 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: { type: "number", example: 200 },
+                    message: {
+                      type: "string",
+                      example: "드롭다운 옵션 조회 성공",
+                    },
+                    data: {
+                      type: "object",
+                      properties: {
+                        languages: {
+                          type: "array",
+                          items: { type: "string" },
+                          example: ["Korean", "English", "Chinese"],
+                        },
+                        jobFields: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              code: { type: "string", example: "2" },
+                              nameKo: { type: "string", example: "전문가" },
+                              nameEn: {
+                                type: "string",
+                                example: "Professionals",
+                              },
+                              description: {
+                                type: "string",
+                                example: "과학, 공학, 의학, 교육 등 전문 분야",
+                              },
+                            },
+                          },
+                        },
+                        salaryRanges: {
+                          type: "array",
+                          items: { type: "string" },
+                          example: [
+                            "2천만 이하",
+                            "2천만 ~ 3천만",
+                            "3천만 ~ 5천만",
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          500: { description: "서버 오류" },
+        },
+      },
+    },
     "/api/profile": {
       post: {
         summary: "사용자 이력 등록",
@@ -44,14 +109,21 @@ export const profileSwaggerDocs = {
                     example: "3천만 ~ 5천만",
                   },
                   desiredJob: {
-                    type: "object",
-                    properties: {
-                      mainCategory: { type: "string", example: "IT / 개발" },
-                      subCategory: {
-                        type: "string",
-                        example: "프론트엔드 개발자",
-                      },
-                    },
+                    type: "string",
+                    enum: [
+                      "0", // 군인
+                      "1", // 관리자
+                      "2", // 전문가
+                      "3", // 기술자 및 준전문가
+                      "4", // 사무종사자
+                      "5", // 서비스 및 판매 종사자
+                      "6", // 농림어업 숙련 종사자
+                      "7", // 기능원 및 관련 기능 종사자
+                      "8", // 설비·기계 조작 및 조립 종사자
+                      "9", // 단순노무 종사자
+                    ],
+                    description: "ISCO-08 대분류 직업군 코드",
+                    example: "2",
                   },
                   languageWeight: {
                     type: "integer",

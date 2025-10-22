@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import User from "../models/User";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { UserDocument } from "../models/User";
 
 interface AuthRequest extends Request {

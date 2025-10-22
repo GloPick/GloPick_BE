@@ -4,9 +4,6 @@ export interface GuestProfile {
     level: string;
   }>;
   desiredSalary: string;
-  desiredJob: {
-    mainCategory: string;
-    subCategory: string;
-  };
+  desiredJob: string; // ISCO-08 대분류 코드 ("0"-"9")
   additionalNotes?: string;
 }

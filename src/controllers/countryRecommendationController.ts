@@ -12,20 +12,7 @@ import CountryRecommendationResult from "../models/countryRecommendationResult";
 import UserProfile from "../models/UserProfile";
 import { AuthRequest } from "../middlewares/authMiddleware";
 import { SUPPORTED_LANGUAGES, JOB_FIELDS } from "../constants/dropdownOptions";
-
-// 연봉 문자열을 숫자로 변환하는 함수
-function convertSalaryToNumber(salaryString: string): number {
-  const salaryMap: { [key: string]: number } = {
-    "2천만 이하": 20000,
-    "2천만 ~ 3천만": 25000,
-    "3천만 ~ 5천만": 40000,
-    "5천만 ~ 7천만": 60000,
-    "7천만 ~ 1억": 85000,
-    "1억 이상": 120000,
-    "기타 (직접 입력)": 50000, // 기본값
-  };
-  return salaryMap[salaryString] || 50000;
-}
+import { oecdService } from "../services/oecdService";
 
 // 언어 문자열을 표준화하는 함수
 function normalizeLanguage(language: string): string {
@@ -50,10 +37,6 @@ function validateUserProfile(profile: UserCareerProfile): string | null {
     return "사용 가능한 언어를 선택해주세요.";
   }
 
-  if (!profile.expectedSalary || profile.expectedSalary <= 0) {
-    return "유효한 희망 연봉을 입력해주세요.";
-  }
-
   if (!profile.jobField || !profile.jobField.code || !profile.jobField.nameKo) {
     return "직무 분야를 올바르게 선택해주세요.";
   }
@@ -64,9 +47,9 @@ function validateUserProfile(profile: UserCareerProfile): string | null {
     return "ISCO-08 표준 직무 분류 코드를 선택해주세요.";
   }
 
-  // 연봉 범위 검증
-  if (profile.expectedSalary < 10000 || profile.expectedSalary > 500000) {
-    return "희망 연봉은 $10,000 ~ $500,000 범위로 입력해주세요.";
+  // 삶의 질 가중치 검증
+  if (!profile.qualityOfLifeWeights) {
+    return "삶의 질 가중치를 설정해주세요.";
   }
 
   // 언어 검증
@@ -104,33 +87,46 @@ async function saveRecommendation(
   userId: string,
   profileId: string,
   recommendations: CountryRecommendation[],
-  weights: { language: number; salary: number; job: number }
+  weights: { language: number; job: number; qualityOfLife: number }
 ) {
+  // OECD 서비스 import 필요
+  const { oecdService } = await import("../services/oecdService");
+
   const savedResult = new CountryRecommendationResult({
     user: userId,
     profile: profileId,
     weights,
-    recommendations: recommendations.map((rec, index) => ({
-      country: rec.country.name,
-      score: rec.totalScore,
-      rank: index + 1,
-      details: {
-        economicScore: rec.breakdown.languageScore,
-        employmentScore: rec.breakdown.jobScore,
-        languageScore: rec.breakdown.languageScore,
-        salaryScore: rec.breakdown.salaryScore,
-      },
-      economicData: {
-        gdpPerCapita: rec.country.gdpPerCapita || 0,
-        employmentRate: rec.country.employmentRate || 0,
-        averageSalary: 0,
-      },
-      countryInfo: {
-        region: rec.country.region,
-        languages: rec.country.languages,
-        population: rec.country.population || 0,
-      },
-    })),
+    recommendations: await Promise.all(
+      recommendations.map(async (rec, index) => {
+        // 각 국가의 OECD 데이터 조회
+        const oecdData = await oecdService.getCountryBetterLifeData(
+          rec.country.name
+        );
+
+        return {
+          country: rec.country.name,
+          score: rec.totalScore,
+          rank: index + 1,
+          details: {
+            languageScore: rec.breakdown.languageScore,
+            jobScore: rec.breakdown.jobScore,
+            qualityOfLifeScore: rec.breakdown.qualityOfLifeScore,
+          },
+          qualityOfLifeData: {
+            income: oecdData?.income || 0,
+            jobs: oecdData?.jobs || 0,
+            health: oecdData?.health || 0,
+            lifeSatisfaction: oecdData?.lifeSatisfaction || 0,
+            safety: oecdData?.safety || 0,
+          },
+          countryInfo: {
+            region: rec.country.region,
+            languages: rec.country.languages,
+            population: rec.country.population || 0,
+          },
+        };
+      })
+    ),
   });
 
   await savedResult.save();
@@ -166,8 +162,9 @@ export const getCountryRecommendations = asyncHandler(
       if (
         !dbProfile.weights ||
         dbProfile.weights.languageWeight === undefined ||
-        dbProfile.weights.salaryWeight === undefined ||
-        dbProfile.weights.jobWeight === undefined
+        dbProfile.weights.jobWeight === undefined ||
+        dbProfile.weights.qualityOfLifeWeight === undefined ||
+        !dbProfile.qualityOfLifeWeights
       ) {
         return res.status(400).json({
           success: false,
@@ -176,14 +173,23 @@ export const getCountryRecommendations = asyncHandler(
           data: {
             profileId: profileId,
             currentWeights: dbProfile.weights,
+            qualityOfLifeWeights: dbProfile.qualityOfLifeWeights,
           },
         });
       }
 
       const weights = {
         language: dbProfile.weights.languageWeight,
-        salary: dbProfile.weights.salaryWeight,
         job: dbProfile.weights.jobWeight,
+        qualityOfLife: dbProfile.weights.qualityOfLifeWeight,
+      };
+
+      const qualityOfLifeWeights = {
+        income: dbProfile.qualityOfLifeWeights.income,
+        jobs: dbProfile.qualityOfLifeWeights.jobs,
+        health: dbProfile.qualityOfLifeWeights.health,
+        lifeSatisfaction: dbProfile.qualityOfLifeWeights.lifeSatisfaction,
+        safety: dbProfile.qualityOfLifeWeights.safety,
       };
 
       // 데이터베이스 프로필을 UserCareerProfile 형식으로 변환
@@ -193,14 +199,12 @@ export const getCountryRecommendations = asyncHandler(
 
       const userProfile = {
         language: normalizeLanguage(dbProfile.language || "English"),
-        expectedSalary: dbProfile.desiredSalary
-          ? convertSalaryToNumber(dbProfile.desiredSalary)
-          : 50000,
         jobField: {
           code: jobField.code,
           nameKo: jobField.nameKo,
           nameEn: jobField.nameEn,
         },
+        qualityOfLifeWeights, // OECD Better Life Index 가중치 추가
       };
 
       console.log("추천 요청 프로필:", userProfile);
@@ -235,9 +239,10 @@ export const getCountryRecommendations = asyncHandler(
           recommendations,
           appliedWeights: {
             language: weights.language / 100,
-            salary: weights.salary / 100,
             job: weights.job / 100,
+            qualityOfLife: weights.qualityOfLife / 100,
           },
+          qualityOfLifeWeights,
           timestamp: new Date().toISOString(),
         },
       });

@@ -3,7 +3,7 @@
 // 지원 가능한 언어 목록
 export const SUPPORTED_LANGUAGES = [
   "Korean",
-  "English", 
+  "English",
   "Chinese",
   "Japanese",
   "Spanish",
@@ -30,7 +30,7 @@ export const JOB_FIELDS = [
   {
     code: "2",
     nameKo: "전문가",
-    nameEn: "Professionals", 
+    nameEn: "Professionals",
     description: "과학, 공학, 의학, 교육, 법률, 사회과학, 인문학 등 전문 분야",
   },
   {
@@ -83,23 +83,53 @@ export const JOB_FIELDS = [
   },
 ] as const;
 
-// 우선순위 옵션
+// OECD Better Life Index 5가지 핵심 지표
+export const QUALITY_OF_LIFE_INDICATORS = {
+  income: {
+    label: "소득 (Income)",
+    description: "가구 순자산, 가구 순조정 가처분소득",
+    unit: "USD",
+  },
+  jobs: {
+    label: "일자리 (Jobs)",
+    description: "고용률, 장기실업률, 개인소득",
+    unit: "%",
+  },
+  health: {
+    label: "건강 (Health)",
+    description: "기대수명, 건강상태 자가평가",
+    unit: "years/score",
+  },
+  lifeSatisfaction: {
+    label: "삶의 만족도 (Life Satisfaction)",
+    description: "삶의 만족도 평가 점수",
+    unit: "0-10 scale",
+  },
+  safety: {
+    label: "안전 (Safety)",
+    description: "야간 홀로 걷기 안전도, 강도 피해율",
+    unit: "%",
+  },
+} as const;
+
+// 우선순위 옵션 (3가지: 언어, 직무, 삶의 질)
 export const PRIORITY_OPTIONS = {
   language: {
     label: "언어 호환성",
     description: "사용 가능한 언어와 현지 언어의 일치도",
   },
-  salary: {
-    label: "연봉 조건", 
-    description: "희망 연봉 달성 가능성",
-  },
   job: {
     label: "직무 기회",
     description: "해당 직무 분야의 취업 기회",
   },
+  qualityOfLife: {
+    label: "삶의 질",
+    description: "OECD Better Life Index 기반 생활 여건",
+  },
 } as const;
 
 // 타입 정의
-export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
-export type JobFieldCode = typeof JOB_FIELDS[number]["code"];
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+export type JobFieldCode = (typeof JOB_FIELDS)[number]["code"];
 export type PriorityOption = keyof typeof PRIORITY_OPTIONS;
+export type QualityOfLifeIndicator = keyof typeof QUALITY_OF_LIFE_INDICATORS;

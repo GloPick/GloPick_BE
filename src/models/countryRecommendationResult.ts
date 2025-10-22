@@ -14,15 +14,16 @@ const CountryRecommendationResultSchema = new mongoose.Schema(
         score: { type: Number, required: true },
         rank: { type: Number, required: true },
         details: {
-          economicScore: { type: Number, required: true },
-          employmentScore: { type: Number, required: true },
           languageScore: { type: Number, required: true },
-          salaryScore: { type: Number, required: true },
+          jobScore: { type: Number, required: true },
+          qualityOfLifeScore: { type: Number, required: true },
         },
-        economicData: {
-          gdpPerCapita: { type: Number },
-          employmentRate: { type: Number },
-          averageSalary: { type: Number },
+        qualityOfLifeData: {
+          income: { type: Number },
+          jobs: { type: Number },
+          health: { type: Number },
+          lifeSatisfaction: { type: Number },
+          safety: { type: Number },
         },
         countryInfo: {
           region: { type: String },
@@ -33,8 +34,8 @@ const CountryRecommendationResultSchema = new mongoose.Schema(
     ],
     weights: {
       language: { type: Number, required: true },
-      salary: { type: Number, required: true },
       job: { type: Number, required: true },
+      qualityOfLife: { type: Number, required: true },
     },
   },
   { timestamps: true }
@@ -47,7 +48,7 @@ export default mongoose.model(
 export interface CountryRecommendationResult {
   weights: {
     language: number;
-    salary: number;
     job: number;
+    qualityOfLife: number;
   };
 }

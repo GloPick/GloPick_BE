@@ -7,8 +7,12 @@ import { CountryRecommendationService } from "../services/countryRecommendationS
 import { asyncHandler } from "../utils/asyncHandler";
 
 // saveWeights 함수 import (가중치 사용할 수 있도록)
-let savedWeights = { language: 30, salary: 30, job: 40 };
-export const saveWeights = (weights: { language: number; salary: number; job: number }) => {
+let savedWeights = { language: 30, job: 30, qualityOfLife: 40 };
+export const saveWeights = (weights: {
+  language: number;
+  job: number;
+  qualityOfLife: number;
+}) => {
   savedWeights = weights;
 };
 export const getSavedWeights = () => savedWeights;
@@ -19,39 +23,43 @@ export const getGuestCountryRecommendations = asyncHandler(
     const { userProfile, weights } = req.body;
 
     // 가중치 필수 검증
-    if (!weights || 
-        weights.language === undefined || 
-        weights.salary === undefined || 
-        weights.job === undefined) {
+    if (
+      !weights ||
+      weights.language === undefined ||
+      weights.job === undefined ||
+      weights.qualityOfLife === undefined
+    ) {
       return res.status(400).json({
         success: false,
-        message: "가중치 정보가 필요합니다. language, salary, job 가중치를 모두 입력해주세요.",
+        message:
+          "가중치 정보가 필요합니다. language, job, qualityOfLife 가중치를 모두 입력해주세요.",
         data: {
           required: {
             language: "언어 가중치 (숫자)",
-            salary: "연봉 가중치 (숫자)", 
-            job: "직무 가중치 (숫자)"
+            job: "직무 가중치 (숫자)",
+            qualityOfLife: "삶의 질 가중치 (숫자)",
           },
-          received: weights
-        }
+          received: weights,
+        },
       });
     }
 
     const finalWeights = {
       language: weights.language,
-      salary: weights.salary,
       job: weights.job,
+      qualityOfLife: weights.qualityOfLife,
     };
 
     // 가중치 검증
-    const totalWeight = finalWeights.language + finalWeights.salary + finalWeights.job;
+    const totalWeight =
+      finalWeights.language + finalWeights.job + finalWeights.qualityOfLife;
     if (totalWeight !== 100) {
       return res.status(400).json({
         success: false,
         message: "가중치의 합이 100이어야 합니다.",
-        data: { 
+        data: {
           currentTotal: totalWeight,
-          weights: finalWeights
+          weights: finalWeights,
         },
       });
     }
@@ -67,8 +75,8 @@ export const getGuestCountryRecommendations = asyncHandler(
 
     console.log("비회원 국가 추천 요청:", {
       language: userProfile.language,
-      expectedSalary: userProfile.expectedSalary,
       jobField: userProfile.jobField,
+      qualityOfLifeWeights: userProfile.qualityOfLifeWeights,
       weights: finalWeights,
     });
 
@@ -88,8 +96,8 @@ export const getGuestCountryRecommendations = asyncHandler(
         data: {
           userProfile: {
             language: userProfile.language,
-            expectedSalary: userProfile.expectedSalary,
             jobField: userProfile.jobField,
+            qualityOfLifeWeights: userProfile.qualityOfLifeWeights,
           },
           recommendations,
           appliedWeights: finalWeights,
@@ -116,10 +124,6 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
     return "사용 가능한 언어를 선택해주세요.";
   }
 
-  if (!profile.expectedSalary || profile.expectedSalary <= 0) {
-    return "유효한 희망 연봉을 입력해주세요.";
-  }
-
   if (!profile.jobField || !profile.jobField.code || !profile.jobField.nameKo) {
     return "직무 분야를 올바르게 선택해주세요.";
   }
@@ -130,9 +134,21 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
     return "ISCO-08 표준 직무 분류 코드를 선택해주세요.";
   }
 
-  // 연봉 범위 검증
-  if (profile.expectedSalary < 10000 || profile.expectedSalary > 500000) {
-    return "희망 연봉은 $10,000 ~ $500,000 범위로 입력해주세요.";
+  // 삶의 질 가중치 검증
+  if (!profile.qualityOfLifeWeights) {
+    return "삶의 질 가중치를 설정해주세요.";
+  }
+
+  const qolWeights = profile.qualityOfLifeWeights;
+  const qolTotal =
+    qolWeights.income +
+    qolWeights.jobs +
+    qolWeights.health +
+    qolWeights.lifeSatisfaction +
+    qolWeights.safety;
+
+  if (qolTotal !== 100) {
+    return "삶의 질 지표별 가중치의 합이 100이어야 합니다.";
   }
 
   // 언어 검증

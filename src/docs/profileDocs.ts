@@ -95,18 +95,49 @@ export const profileSwaggerDocs = {
                     description: "사용 가능한 언어 (단일 선택)",
                     example: "English",
                   },
-                  desiredSalary: {
-                    type: "string",
-                    enum: [
-                      "2천만 이하",
-                      "2천만 ~ 3천만",
-                      "3천만 ~ 5천만",
-                      "5천만 ~ 7천만",
-                      "7천만 ~ 1억",
-                      "1억 이상",
-                      "기타 (직접 입력)",
+                  qualityOfLifeWeights: {
+                    type: "object",
+                    description:
+                      "OECD Better Life Index 5가지 지표별 가중치 (합계 100)",
+                    properties: {
+                      income: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 20,
+                      },
+                      jobs: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 20,
+                      },
+                      health: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 20,
+                      },
+                      lifeSatisfaction: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 20,
+                      },
+                      safety: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 20,
+                      },
+                    },
+                    required: [
+                      "income",
+                      "jobs",
+                      "health",
+                      "lifeSatisfaction",
+                      "safety",
                     ],
-                    example: "3천만 ~ 5천만",
                   },
                   desiredJob: {
                     type: "string",
@@ -130,10 +161,10 @@ export const profileSwaggerDocs = {
                     description: "언어 가중치 (10 단위)",
                     example: 40,
                   },
-                  salaryWeight: {
+                  qualityOfLifeWeight: {
                     type: "integer",
-                    description: "연봉 가중치 (10 단위)",
-                    example: 30,
+                    description: "삶의 질 가중치 (10 단위)",
+                    example: 40,
                   },
                   jobWeight: {
                     type: "integer",
@@ -147,11 +178,11 @@ export const profileSwaggerDocs = {
                 },
                 required: [
                   "language",
-                  "desiredSalary",
                   "desiredJob",
+                  "qualityOfLifeWeights",
                   "languageWeight",
-                  "salaryWeight",
                   "jobWeight",
+                  "qualityOfLifeWeight",
                 ],
               },
             },

@@ -5,14 +5,15 @@ import {
   CountryRecommendation,
 } from "../types/countryRecommendation";
 import { ExternalAPIService } from "./externalAPIService";
+import { oecdService } from "./oecdService";
 
 interface Weights {
   language: number;
-  salary: number;
   job: number;
+  qualityOfLife: number;
 }
 
-let userWeights: Weights = { language: 0, salary: 0, job: 0 };
+let userWeights: Weights = { language: 0, job: 0, qualityOfLife: 0 };
 
 export const saveWeights = (weights: Weights) => {
   userWeights = weights;
@@ -34,7 +35,7 @@ export class CountryRecommendationService {
       console.log(`총 ${allCountries.length}개 국가 데이터 수집 완료`);
 
       // 2. 각 국가별 점수 계산
-      const scoredCountries = this.calculateCountryScores(
+      const scoredCountries = await this.calculateCountryScores(
         allCountries,
         userProfile
       );
@@ -42,24 +43,31 @@ export class CountryRecommendationService {
       // 3. 저장된 가중치 가져오기
       const userWeights = getWeights();
       console.log("적용할 가중치:", userWeights);
-      
+
       // 가중치가 설정되지 않았다면 기본값 사용
       const finalWeights = {
-        language: userWeights.language || 33,
-        salary: userWeights.salary || 33,
-        job: userWeights.job || 34,
+        language: userWeights.language || 30,
+        job: userWeights.job || 30,
+        qualityOfLife: userWeights.qualityOfLife || 40,
       };
-      
+
       console.log("최종 가중치:", finalWeights);
 
       // 4. 사용자 입력 가중치 적용
-      const weightedCountries = this.applyDynamicWeights(scoredCountries, finalWeights);
+      const weightedCountries = this.applyDynamicWeights(
+        scoredCountries,
+        finalWeights
+      );
 
       // 5. 상위 5개 국가 선별
       const topCountries = this.selectTopCountries(weightedCountries, 5);
 
       // 6. 추천 결과 포맷팅
-      return this.formatRecommendations(topCountries, userProfile, finalWeights);
+      return this.formatRecommendations(
+        topCountries,
+        userProfile,
+        finalWeights
+      );
     } catch (error) {
       console.error("국가 추천 처리 중 오류:", error);
       throw new Error("국가 추천을 처리하는 중 오류가 발생했습니다.");
@@ -74,39 +82,51 @@ export class CountryRecommendationService {
     return scoredCountries.map((country) => {
       const totalScore =
         country.scores.languageScore * (weights.language / 100) +
-        country.scores.salaryScore * (weights.salary / 100) +
-        country.scores.jobScore * (weights.job / 100);
+        country.scores.jobScore * (weights.job / 100) +
+        country.scores.qualityOfLifeScore * (weights.qualityOfLife / 100);
 
       return { ...country, weightedScore: totalScore };
     });
   }
 
   // 각 국가별 개별 점수 계산
-  private static calculateCountryScores(
+  private static async calculateCountryScores(
     countries: CountryData[],
     userProfile: UserCareerProfile
-  ): ScoredCountry[] {
-    return countries.map((country) => {
+  ): Promise<ScoredCountry[]> {
+    const scoredCountries: ScoredCountry[] = [];
+
+    for (const country of countries) {
       const languageScore = this.calculateLanguageScore(
         country,
         userProfile.language
       );
-      const salaryScore = this.calculateSalaryScore(
-        country,
-        userProfile.expectedSalary
-      );
+
       const jobScore = this.calculateJobScore(country, userProfile.jobField);
 
-      return {
+      // OECD Better Life Index 점수 계산
+      let qualityOfLifeScore = 50; // 기본값
+      try {
+        qualityOfLifeScore = await oecdService.calculateQualityOfLifeScore(
+          country.name,
+          userProfile.qualityOfLifeWeights
+        );
+      } catch (error) {
+        console.warn(`${country.name}의 OECD 점수 계산 실패:`, error);
+      }
+
+      scoredCountries.push({
         country,
         scores: {
           languageScore,
-          salaryScore,
           jobScore,
+          qualityOfLifeScore,
         },
         weightedScore: 0, // 나중에 계산
-      };
-    });
+      });
+    }
+
+    return scoredCountries;
   }
 
   // 언어 적합도 점수 계산 (0-100)
@@ -140,29 +160,7 @@ export class CountryRecommendationService {
     return 0; // 매칭되지 않는 경우
   }
 
-  // 연봉 적합도 점수 계산 (0-100)
-  private static calculateSalaryScore(
-    country: CountryData,
-    expectedSalary: number
-  ): number {
-    if (!country.gdpPerCapita) {
-      return 30; // 데이터 없는 경우 중간 점수
-    }
-
-    // GDP per capita를 기준으로 예상 연봉 추정
-    // 일반적으로 GDP per capita의 1.5-2배가 평균 연봉
-    const estimatedAverageSalary = country.gdpPerCapita * 1.75;
-
-    // GDP per capita를 기반으로 한 연봉 추정
-    const adjustedSalary = estimatedAverageSalary;
-
-    // 기대 연봉 대비 점수 계산
-    if (adjustedSalary >= expectedSalary) {
-      return 100;
-    } else {
-      return Math.max(10, (adjustedSalary / expectedSalary) * 100);
-    }
-  }
+  // 연봉 적합도 점수는 OECD Better Life Index의 Income 지표로 대체됨
 
   // 직무 기회 점수 계산 (0-100)
   private static calculateJobScore(
@@ -379,8 +377,8 @@ export class CountryRecommendationService {
     return topCountries.map((scored, index) => {
       const normalizedWeights = {
         language: appliedWeights.language / 100,
-        salary: appliedWeights.salary / 100,
         job: appliedWeights.job / 100,
+        qualityOfLife: appliedWeights.qualityOfLife / 100,
       };
 
       return {
@@ -389,8 +387,9 @@ export class CountryRecommendationService {
         totalScore: Math.round(scored.weightedScore * 100) / 100,
         breakdown: {
           languageScore: Math.round(scored.scores.languageScore * 100) / 100,
-          salaryScore: Math.round(scored.scores.salaryScore * 100) / 100,
           jobScore: Math.round(scored.scores.jobScore * 100) / 100,
+          qualityOfLifeScore:
+            Math.round(scored.scores.qualityOfLifeScore * 100) / 100,
           appliedWeights: normalizedWeights,
         },
         reasons: this.generateReasons(scored, userProfile),
@@ -415,13 +414,13 @@ export class CountryRecommendationService {
       reasons.push("영어 사용 가능 국가로 의사소통 가능");
     }
 
-    // 연봉 관련 이유
-    if (scores.salaryScore > 80) {
+    // 삶의 질 관련 이유
+    if (scores.qualityOfLifeScore > 80) {
       reasons.push(
-        `희망 연봉 달성 가능성 높음 (${Math.round(scores.salaryScore)}점)`
+        `우수한 삶의 질 (${Math.round(scores.qualityOfLifeScore)}점)`
       );
-    } else if (scores.salaryScore > 60) {
-      reasons.push("합리적인 연봉 수준 기대 가능");
+    } else if (scores.qualityOfLifeScore > 60) {
+      reasons.push("양호한 생활 환경");
     }
 
     // 직무 관련 이유

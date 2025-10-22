@@ -123,8 +123,9 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
         email: profileObj.user?.email || null,
       },
       languages: profileObj.language, // 단일 언어로 변경
-      desiredSalary: profileObj.desiredSalary,
       desiredJob: profileObj.desiredJob,
+      qualityOfLifeWeights: profileObj.qualityOfLifeWeights,
+      weights: profileObj.weights,
       additionalNotes: profileObj.additionalNotes,
     };
   });
@@ -150,8 +151,9 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
 
   const fields = [
     "language", // 변경된 필드명
-    "desiredSalary",
     "desiredJob",
+    "qualityOfLifeWeights",
+    "weights",
     "additionalNotes",
   ];
 
@@ -165,8 +167,9 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   const responseData = {
     profileId: profileObj._id,
     languages: profileObj.language, // 변경된 필드명
-    desiredSalary: profileObj.desiredSalary,
     desiredJob: profileObj.desiredJob,
+    qualityOfLifeWeights: profileObj.qualityOfLifeWeights,
+    weights: profileObj.weights,
     additionalNotes: profileObj.additionalNotes,
   };
 
@@ -259,7 +262,10 @@ export const getUserRecommendations = async (
     const recommendations = await CountryRecommendationResult.find({
       user: req.user!._id,
     })
-      .populate("profile", "language desiredSalary desiredJob additionalNotes")
+      .populate(
+        "profile",
+        "language desiredJob qualityOfLifeWeights weights additionalNotes"
+      )
       .sort({ createdAt: -1 });
 
     if (!recommendations || recommendations.length === 0) {
@@ -277,8 +283,9 @@ export const getUserRecommendations = async (
         _id: recObj._id,
         profile: {
           language: profile?.language || null,
-          desiredSalary: profile?.desiredSalary || null,
           desiredJob: profile?.desiredJob || null,
+          qualityOfLifeWeights: profile?.qualityOfLifeWeights || null,
+          weights: profile?.weights || null,
           additionalNotes: profile?.additionalNotes || null,
         },
         recommendations: recObj.recommendations.map((country: any) => ({
@@ -286,15 +293,13 @@ export const getUserRecommendations = async (
           score: country.score,
           rank: country.rank,
           details: {
-            economicScore: country.details?.economicScore || 0,
-            employmentScore: country.details?.employmentScore || 0,
             languageScore: country.details?.languageScore || 0,
-            salaryScore: country.details?.salaryScore || 0,
+            jobScore: country.details?.jobScore || 0,
+            qualityOfLifeScore: country.details?.qualityOfLifeScore || 0,
           },
           economicData: {
             gdpPerCapita: country.economicData?.gdpPerCapita || null,
             employmentRate: country.economicData?.employmentRate || null,
-            averageSalary: country.economicData?.averageSalary || null,
           },
           countryInfo: {
             region: country.countryInfo?.region || null,
@@ -304,8 +309,11 @@ export const getUserRecommendations = async (
         })),
         weights: {
           language: recObj.weights?.language || 0,
-          salary: recObj.weights?.salary || 0,
           job: recObj.weights?.job || 0,
+          qualityOfLife:
+            (recObj.weights as any)?.qualityOfLife ||
+            (recObj.weights as any)?.salary ||
+            0, // 기존 salary 필드 호환성 지원
         },
         createdAt: recObj.createdAt,
       };
@@ -338,7 +346,10 @@ export const getRecommendationsByProfileId = async (
       user: req.user!._id,
       profile: profileId,
     })
-      .populate("profile", "language desiredSalary desiredJob additionalNotes")
+      .populate(
+        "profile",
+        "language desiredJob qualityOfLifeWeights weights additionalNotes"
+      )
       .sort({ createdAt: -1 });
 
     if (!recommendations || recommendations.length === 0) {
@@ -356,8 +367,9 @@ export const getRecommendationsByProfileId = async (
         _id: recObj._id,
         profile: {
           language: profile.language || null,
-          desiredSalary: profile.desiredSalary || null,
           desiredJob: profile.desiredJob || null,
+          qualityOfLifeWeights: profile.qualityOfLifeWeights || null,
+          weights: profile.weights || null,
           additionalNotes: profile.additionalNotes || null,
         },
         recommendations: recObj.recommendations.map((country: any) => ({
@@ -365,15 +377,13 @@ export const getRecommendationsByProfileId = async (
           score: country.score,
           rank: country.rank,
           details: {
-            economicScore: country.details?.economicScore || 0,
-            employmentScore: country.details?.employmentScore || 0,
             languageScore: country.details?.languageScore || 0,
-            salaryScore: country.details?.salaryScore || 0,
+            jobScore: country.details?.jobScore || 0,
+            qualityOfLifeScore: country.details?.qualityOfLifeScore || 0,
           },
           economicData: {
             gdpPerCapita: country.economicData?.gdpPerCapita || null,
             employmentRate: country.economicData?.employmentRate || null,
-            averageSalary: country.economicData?.averageSalary || null,
           },
           countryInfo: {
             region: country.countryInfo?.region || null,
@@ -383,8 +393,11 @@ export const getRecommendationsByProfileId = async (
         })),
         weights: {
           language: recObj.weights?.language || 0,
-          salary: recObj.weights?.salary || 0,
           job: recObj.weights?.job || 0,
+          qualityOfLife:
+            (recObj.weights as any)?.qualityOfLife ||
+            (recObj.weights as any)?.salary ||
+            0, // 기존 salary 필드 호환성 지원
         },
         createdAt: recObj.createdAt,
       };

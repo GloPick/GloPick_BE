@@ -3,7 +3,13 @@ export interface GuestProfile {
     language: string;
     level: string;
   }>;
-  desiredSalary: string;
+  qualityOfLifeWeights: {
+    income: number;
+    jobs: number;
+    health: number;
+    lifeSatisfaction: number;
+    safety: number;
+  };
   desiredJob: string; // ISCO-08 대분류 코드 ("0"-"9")
   additionalNotes?: string;
 }

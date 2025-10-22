@@ -23,18 +23,43 @@ const userProfileSchema = new mongoose.Schema({
     required: true,
   },
 
-  // 희망 연봉
-  desiredSalary: {
-    type: String,
-    enum: [
-      "2천만 이하",
-      "2천만 ~ 3천만",
-      "3천만 ~ 5천만",
-      "5천만 ~ 7천만",
-      "7천만 ~ 1억",
-      "1억 이상",
-      "기타 (직접 입력)",
-    ],
+  // OECD Better Life Index 우선순위 가중치 (5가지 핵심 지표)
+  qualityOfLifeWeights: {
+    income: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 20,
+    },
+    jobs: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 20,
+    },
+    health: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 20,
+    },
+    lifeSatisfaction: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 20,
+    },
+    safety: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 20,
+    },
   },
 
   // 희망 직무 분류 (ISCO-08 대분류 기준)
@@ -55,29 +80,29 @@ const userProfileSchema = new mongoose.Schema({
     required: true,
   },
 
-  // 가중치 설정 (합계 100%)
+  // 전체 추천 가중치 (언어 + 직무 + 삶의 질)
   weights: {
     languageWeight: {
       type: Number,
       required: true,
       min: 0,
       max: 100,
-      default: 30
-    },
-    salaryWeight: {
-      type: Number,
-      required: true,
-      min: 0,
-      max: 100,
-      default: 30
+      default: 30,
     },
     jobWeight: {
       type: Number,
       required: true,
       min: 0,
       max: 100,
-      default: 40
-    }
+      default: 30,
+    },
+    qualityOfLifeWeight: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 40,
+    },
   },
 
   additionalNotes: { type: String }, // 추가 희망 사항

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 // 사용자 타입 인터페이스 정의
 export interface UserDocument extends mongoose.Document {

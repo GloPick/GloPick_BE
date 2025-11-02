@@ -122,14 +122,159 @@ export class ExternalAPIService {
     }
   }
 
-  // ILOSTAT API에서 고용 데이터 가져오기 (고용률)
+  // ILOSTAT API에서 ISCO-08 대분류별 고용 데이터 가져오기
+  static async getISCOEmploymentData(
+    countryCodes: string[]
+  ): Promise<Map<string, Map<string, number>>> {
+    const iscoEmploymentData = new Map<string, Map<string, number>>();
+
+    try {
+      console.log("ILOSTAT ISCO 고용 데이터 수집 시작...");
+
+      // EMP_TEMP_SEX_AGE_NB_A: Employment by occupation (ISCO-08)
+      const response = await axios.get(
+        `${this.ILOSTAT_API}/?id=EMP_TEMP_SEX_AGE_NB_A&type=label&format=.csv&lang=en`,
+        {
+          timeout: 20000,
+          headers: {
+            "User-Agent": "GloPick-Backend/1.0.0",
+            Accept: "text/csv",
+          },
+        }
+      );
+
+      if (!response.data || typeof response.data !== "string") {
+        console.warn("ILOSTAT ISCO 데이터 응답이 올바르지 않습니다");
+        return iscoEmploymentData;
+      }
+
+      const lines = response.data.split("\n").filter((line) => line.trim());
+      if (lines.length < 2) {
+        console.warn("ILOSTAT ISCO CSV 데이터가 충분하지 않습니다");
+        return iscoEmploymentData;
+      }
+
+      const headers = lines[0]
+        .split(",")
+        .map((h) => h.replace(/"/g, "").trim());
+
+      const countryIndex = headers.findIndex(
+        (h: string) =>
+          h.toLowerCase().includes("country") ||
+          h.toLowerCase().includes("ref_area")
+      );
+      const valueIndex = headers.findIndex(
+        (h: string) =>
+          h.toLowerCase().includes("obs_value") ||
+          h.toLowerCase().includes("value")
+      );
+      const timeIndex = headers.findIndex(
+        (h: string) =>
+          h.toLowerCase().includes("time") || h.toLowerCase().includes("year")
+      );
+      const occupationIndex = headers.findIndex(
+        (h: string) =>
+          h.toLowerCase().includes("occupation") ||
+          h.toLowerCase().includes("classif1")
+      );
+
+      if (countryIndex === -1 || valueIndex === -1 || occupationIndex === -1) {
+        console.warn("ILOSTAT ISCO CSV 구조를 파싱할 수 없습니다");
+        return iscoEmploymentData;
+      }
+
+      // ISCO-08 대분류 코드 매핑
+      const iscoMapping: { [key: string]: string } = {
+        Managers: "1",
+        Professionals: "2",
+        "Technicians and associate professionals": "3",
+        "Clerical support workers": "4",
+        "Service and sales workers": "5",
+        "Skilled agricultural, forestry and fishery workers": "6",
+        "Craft and related trades workers": "7",
+        "Plant and machine operators, and assemblers": "8",
+        "Elementary occupations": "9",
+        "Armed forces occupations": "0",
+      };
+
+      // 데이터 파싱
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+
+        try {
+          const columns = line
+            .split(",")
+            .map((col) => col.replace(/"/g, "").trim());
+
+          if (
+            columns.length <=
+            Math.max(countryIndex, valueIndex, timeIndex, occupationIndex)
+          ) {
+            continue;
+          }
+
+          const countryName = columns[countryIndex];
+          const employmentValue = columns[valueIndex];
+          const yearStr = timeIndex >= 0 ? columns[timeIndex] : "";
+          const occupationStr = columns[occupationIndex];
+
+          if (!countryName || !employmentValue || !occupationStr) continue;
+
+          const employmentRate = parseFloat(employmentValue);
+          const year = yearStr ? parseInt(yearStr) : 2023;
+
+          if (isNaN(employmentRate) || year < 2018) continue;
+
+          // ISCO 코드 찾기
+          let iscoCode = "";
+          for (const [occupationName, code] of Object.entries(iscoMapping)) {
+            if (
+              occupationStr.toLowerCase().includes(occupationName.toLowerCase())
+            ) {
+              iscoCode = code;
+              break;
+            }
+          }
+
+          if (!iscoCode) continue;
+
+          const countryCode = this.getCountryCodeFromName(countryName);
+          if (countryCode && countryCodes.includes(countryCode)) {
+            if (!iscoEmploymentData.has(countryCode)) {
+              iscoEmploymentData.set(countryCode, new Map());
+            }
+
+            const countryData = iscoEmploymentData.get(countryCode)!;
+
+            // 최신 데이터만 유지
+            if (!countryData.has(iscoCode) || year > 2020) {
+              countryData.set(iscoCode, employmentRate);
+            }
+          }
+        } catch (lineError) {
+          continue;
+        }
+      }
+
+      console.log(
+        `ILOSTAT ISCO 데이터: ${iscoEmploymentData.size}개국 수집 완료`
+      );
+      return iscoEmploymentData;
+    } catch (error) {
+      console.error("ILOSTAT ISCO API 호출 실패:", error);
+      return iscoEmploymentData;
+    }
+  }
+
+  // ILOSTAT API에서 전체 고용률 데이터 가져오기 (백업용)
   static async getEmploymentData(
     countryCodes: string[]
   ): Promise<Map<string, number>> {
     const employmentData = new Map<string, number>();
 
     try {
-      console.log("ILOSTAT API 호출 시작...");
+      console.log("ILOSTAT 전체 고용률 데이터 수집 시작...");
 
       // ILOSTAT API: EMP_DWAP_SEX_AGE_RT_A (고용률 지표)
       const response = await axios.get(
@@ -143,9 +288,6 @@ export class ExternalAPIService {
         }
       );
 
-      console.log(`ILOSTAT API 응답: ${response.status}`);
-
-      // CSV 데이터 파싱 (견고한 파싱)
       if (!response.data || typeof response.data !== "string") {
         console.warn("ILOSTAT API 응답 데이터가 올바르지 않습니다");
         return employmentData;
@@ -161,7 +303,6 @@ export class ExternalAPIService {
         .split(",")
         .map((h) => h.replace(/"/g, "").trim());
 
-      // 국가명과 고용률 컬럼 찾기
       const countryIndex = headers.findIndex(
         (h: string) =>
           h.toLowerCase().includes("country") ||
@@ -179,15 +320,10 @@ export class ExternalAPIService {
 
       if (countryIndex === -1 || valueIndex === -1) {
         console.warn("ILOSTAT CSV 구조를 파싱할 수 없습니다");
-        console.log("Available headers:", headers);
         return employmentData;
       }
 
-      console.log(
-        `CSV 파싱: country=${countryIndex}, value=${valueIndex}, time=${timeIndex}`
-      );
-
-      // 최신 데이터만 사용 (2018년 이후로 범위 확대)
+      // 데이터 파싱
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
         if (!line.trim()) continue;
@@ -208,32 +344,26 @@ export class ExternalAPIService {
           if (!countryName || !employmentRateStr) continue;
 
           const employmentRate = parseFloat(employmentRateStr);
-          const year = yearStr ? parseInt(yearStr) : 2023; // 기본값
+          const year = yearStr ? parseInt(yearStr) : 2023;
 
-          if (!countryName || isNaN(employmentRate) || year < 2018) continue;
+          if (isNaN(employmentRate) || year < 2018) continue;
 
-          // 국가명을 ISO 코드로 매핑
           const countryCode = this.getCountryCodeFromName(countryName);
           if (countryCode && countryCodes.includes(countryCode)) {
-            // 최신 데이터만 유지
             if (!employmentData.has(countryCode) || year > 2020) {
               employmentData.set(countryCode, employmentRate);
             }
           }
         } catch (lineError) {
-          // 개별 라인 파싱 오류는 무시하고 계속 진행
           continue;
         }
       }
 
-      console.log(
-        `ILOSTAT에서 ${employmentData.size}개국 고용률 데이터 수집 완료`
-      );
-      console.log("✅ ILOSTAT API 데이터 수집 완료");
+      console.log(`ILOSTAT 전체 고용률: ${employmentData.size}개국 수집 완료`);
       return employmentData;
     } catch (error) {
-      console.error("ILOSTAT API 호출 실패:", error);
-      return employmentData; // 에러 발생해도 빈 맵 반환
+      console.error("ILOSTAT 전체 고용률 API 호출 실패:", error);
+      return employmentData;
     }
   }
 
@@ -283,7 +413,7 @@ export class ExternalAPIService {
     return countryMapping[countryName] || null;
   }
 
-  // 모든 외부 API 데이터를 한번에 수집 (REST Countries + World Bank + ILOSTAT)
+  // 모든 외부 API 데이터를 한번에 수집
   static async getAllCountryData(): Promise<CountryData[]> {
     try {
       console.log("국가 기본 정보 수집 중...");
@@ -292,17 +422,20 @@ export class ExternalAPIService {
 
       console.log(`${countries.length}개 국가 데이터 수집 중...`);
 
-      // 병렬로 외부 API 호출 (REST Countries + World Bank + ILOSTAT)
-      const [economicData, employmentData] = await Promise.all([
-        this.getEconomicData(countryCodes),
-        this.getEmploymentData(countryCodes),
-      ]);
+      // 병렬로 외부 API 호출
+      const [economicData, iscoEmploymentData, employmentData] =
+        await Promise.all([
+          this.getEconomicData(countryCodes),
+          this.getISCOEmploymentData(countryCodes),
+          this.getEmploymentData(countryCodes),
+        ]);
 
       // 데이터 병합
       return countries.map((country) => ({
         ...country,
         gdpPerCapita: economicData.get(country.code),
         employmentRate: employmentData.get(country.code),
+        iscoEmploymentData: iscoEmploymentData.get(country.code) || new Map(),
       }));
     } catch (error) {
       console.error("외부 API 데이터 수집 실패:", error);

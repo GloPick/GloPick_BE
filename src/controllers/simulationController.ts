@@ -481,7 +481,7 @@ export const getSimulationList = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 새로운 플로우: 국가 선택 후 GPT를 통한 도시 추천
+// 국가 선택 후 GPT를 통한 도시 추천
 export const selectCountryAndGetCities = async (
   req: AuthRequest,
   res: Response

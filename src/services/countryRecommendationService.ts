@@ -130,232 +130,93 @@ export class CountryRecommendationService {
   }
 
   // 언어 적합도 점수 계산 (0-100)
+  // 100점: 사용자 언어가 국가 공식 언어에 포함
+  // 70점: 영어, 스페인어, 프랑스어, 독일어 (주요 국제 언어)
+  // 30점: 그 외 언어
   private static calculateLanguageScore(
     country: CountryData,
     userLanguage: string
   ): number {
     if (!country.languages || country.languages.length === 0) {
-      return 0;
+      return 30; // 언어 정보가 없는 경우 기본 점수
     }
 
-    // 사용자 언어와 국가 언어의 매칭 확인
+    const userLangLower = userLanguage.toLowerCase();
+
+    // 1. 사용자 언어가 국가 공식 언어에 포함되는지 확인
     const hasMatchingLanguage = country.languages.some(
       (countryLang) =>
-        countryLang.toLowerCase().includes(userLanguage.toLowerCase()) ||
-        userLanguage.toLowerCase().includes(countryLang.toLowerCase())
+        countryLang.toLowerCase().includes(userLangLower) ||
+        userLangLower.includes(countryLang.toLowerCase())
     );
 
     if (hasMatchingLanguage) {
       return 100; // 완전 매칭
     }
 
-    // 영어 사용 국가인 경우 기본 점수 제공 (사용자 언어가 영어가 아닌 경우)
-    if (userLanguage.toLowerCase() !== "english") {
-      const hasEnglish = country.languages.some((lang) =>
-        lang.toLowerCase().includes("english")
+    // 2. 주요 국제 언어 (영어, 스페인어, 프랑스어, 독일어) 체크
+    const majorInternationalLanguages = [
+      "english",
+      "spanish",
+      "french",
+      "german",
+    ];
+
+    if (majorInternationalLanguages.includes(userLangLower)) {
+      // 사용자 언어가 주요 국제 언어인 경우, 해당 언어가 국가에서 사용되는지 확인
+      const countryHasUserLanguage = country.languages.some((lang) =>
+        lang.toLowerCase().includes(userLangLower)
       );
-      return hasEnglish ? 30 : 10;
+
+      if (countryHasUserLanguage) {
+        return 100; // 이미 위에서 체크했지만 명확성을 위해
+      }
     }
 
-    return 0; // 매칭되지 않는 경우
+    // 국가가 주요 국제 언어 중 하나를 사용하는지 확인
+    const countryHasMajorLanguage = country.languages.some((countryLang) =>
+      majorInternationalLanguages.some((majorLang) =>
+        countryLang.toLowerCase().includes(majorLang)
+      )
+    );
+
+    if (countryHasMajorLanguage) {
+      return 70; // 주요 국제 언어를 사용하는 국가
+    }
+
+    // 3. 매칭되지 않는 경우
+    return 30; // 기본 점수
   }
 
-  // 연봉 적합도 점수는 OECD Better Life Index의 Income 지표로 대체됨
-
-  // 직무 기회 점수 계산 (0-100)
+  // 직무 기회 점수 계산 (0-100) - 전체 고용률 50% + ISCO 직무 고용률 50%
   private static calculateJobScore(
     country: CountryData,
     jobField: any
   ): number {
-    let baseScore = 50;
+    let totalScore = 0;
 
-    // 고용률이 높을수록 높은 점수 (고용률은 보통 40-80% 범위)
+    // 1. 전체 고용률 점수 (50%) - 국가의 전반적인 고용 환경
+    let employmentScore = 50; // 기본값
     if (country.employmentRate !== undefined) {
-      // 고용률을 0-100 점수로 변환 (50% 이상이면 좋은 편)
-      const employmentScore = Math.min(
+      // 40-80% 범위를 0-100점으로 정규화
+      employmentScore = Math.min(
         100,
-        Math.max(0, (country.employmentRate - 40) * 2)
+        Math.max(0, (country.employmentRate - 40) * 2.5)
       );
-      baseScore = (baseScore + employmentScore) / 2;
     }
+    totalScore += employmentScore * 0.5;
 
-    // 선진국/기술 선진국 가산점
-    const developedCountries = [
-      "USA",
-      "CAN",
-      "GBR",
-      "DEU",
-      "FRA",
-      "JPN",
-      "KOR",
-      "AUS",
-      "NZL",
-      "SGP",
-      "CHE",
-      "NLD",
-      "SWE",
-      "NOR",
-      "DNK",
-      "FIN",
-    ];
+    // 2. ISCO 직무별 고용률 점수 (50%) - 특정 직무의 수요와 기회
+    let iscoScore = 50; // 기본값
+    const iscoData = country.iscoEmploymentData?.get(jobField.code);
 
-    if (developedCountries.includes(country.code)) {
-      baseScore += 20;
+    if (iscoData && iscoData > 0) {
+      // 로그 스케일로 0-100점 변환 (고용 인구수 기반)
+      iscoScore = Math.min(100, Math.log10(iscoData / 1000000 + 1) * 50);
     }
+    totalScore += iscoScore * 0.5;
 
-    // ISCO 코드별 추가 점수 (국가별 특화 분야)
-    const jobFieldBonus = this.getJobFieldBonus(country.code, jobField.code);
-    baseScore += jobFieldBonus;
-
-    return Math.min(100, Math.max(0, baseScore));
-  }
-
-  // ISCO-08 코드별 직무 분야 보너스 점수
-  private static getJobFieldBonus(
-    countryCode: string,
-    iscoCode: string
-  ): number {
-    // ISCO-08 대분류별 국가 특화 점수
-    const iscoJobFieldMap: {
-      [iscoCode: string]: { [country: string]: number };
-    } = {
-      "1": {
-        // 관리자
-        USA: 25,
-        GBR: 20,
-        CAN: 20,
-        AUS: 18,
-        CHE: 22,
-        SGP: 20,
-        HKG: 18,
-        DEU: 18,
-        FRA: 15,
-        NLD: 15,
-      },
-      "2": {
-        // 전문가 (의사, 변호사, 교수, 엔지니어 등)
-        USA: 25,
-        GBR: 22,
-        CAN: 20,
-        DEU: 22,
-        CHE: 25,
-        AUS: 18,
-        NLD: 20,
-        SWE: 20,
-        NOR: 18,
-        DNK: 18,
-        JPN: 15,
-        KOR: 15,
-        FRA: 18,
-        SGP: 20,
-      },
-      "3": {
-        // 기술자 및 준전문가
-        DEU: 25,
-        CHE: 20,
-        JPN: 22,
-        KOR: 20,
-        USA: 18,
-        CAN: 15,
-        AUS: 15,
-        SGP: 18,
-        NLD: 18,
-        SWE: 15,
-      },
-      "4": {
-        // 사무종사자
-        SGP: 18,
-        HKG: 15,
-        USA: 15,
-        GBR: 12,
-        CAN: 12,
-        AUS: 10,
-        JPN: 12,
-        KOR: 10,
-        DEU: 10,
-        FRA: 10,
-      },
-      "5": {
-        // 서비스 및 판매 종사자
-        USA: 20,
-        GBR: 15,
-        CAN: 15,
-        AUS: 15,
-        SGP: 12,
-        JPN: 10,
-        KOR: 8,
-        FRA: 12,
-        ITA: 10,
-        ESP: 8,
-      },
-      "6": {
-        // 농림어업 숙련 종사자
-        AUS: 20,
-        NZL: 25,
-        CAN: 18,
-        USA: 15,
-        NOR: 15,
-        DNK: 12,
-        NLD: 10,
-        FRA: 8,
-        ESP: 10,
-        ITA: 8,
-      },
-      "7": {
-        // 기능원 및 관련 기능 종사자
-        DEU: 25,
-        CHE: 22,
-        AUT: 20,
-        CAN: 18,
-        AUS: 18,
-        USA: 15,
-        JPN: 15,
-        KOR: 12,
-        NLD: 15,
-        SWE: 15,
-      },
-      "8": {
-        // 설비·기계 조작 및 조립 종사자
-        DEU: 22,
-        JPN: 20,
-        KOR: 18,
-        USA: 18,
-        CAN: 15,
-        CHE: 15,
-        AUT: 15,
-        SWE: 12,
-        NLD: 12,
-        CZE: 10,
-      },
-      "9": {
-        // 단순노무 종사자
-        USA: 10,
-        CAN: 8,
-        AUS: 8,
-        GBR: 6,
-        DEU: 6,
-        SGP: 8,
-        JPN: 5,
-        KOR: 5,
-        FRA: 6,
-        ITA: 5,
-      },
-      "0": {
-        // 군인
-        USA: 15,
-        KOR: 12,
-        GBR: 10,
-        FRA: 8,
-        DEU: 6,
-        CAN: 8,
-        AUS: 8,
-        SGP: 8,
-        JPN: 5,
-        ITA: 5,
-      },
-    };
-
-    return iscoJobFieldMap[iscoCode]?.[countryCode] || 0;
+    return Math.min(100, Math.max(0, Math.round(totalScore)));
   }
 
   // 상위 N개 국가 선별

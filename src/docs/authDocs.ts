@@ -85,5 +85,47 @@ export const authSwaggerDocs = {
         },
       },
     },
+    "/api/auth/kakao": {
+      get: {
+        summary: "카카오 로그인 URL 생성 API",
+        description:
+          "카카오 인증을 위한 URL을 생성합니다.\n\n" +
+          "사용 방법:\n" +
+          "1. 이 API를 호출하여 authUrl을 받습니다\n" +
+          "2. 받은 authUrl을 브라우저에서 엽니다\n" +
+          "3. 카카오 로그인 완료 후 사용자 정보와 JWT 토큰이 포함된 응답을 받습니다\n" +
+          "4. 받은 토큰을 Swagger의 Authorize 버튼에 입력하여 다른 API를 테스트할 수 있습니다\n\n",
+        tags: ["Auth"],
+        responses: {
+          "200": {
+            description: "카카오 인증 URL 생성 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: { type: "number", example: 200 },
+                    message: {
+                      type: "string",
+                      example: "카카오 인증 URL 생성 성공",
+                    },
+                    data: {
+                      type: "object",
+                      properties: {
+                        authUrl: {
+                          type: "string",
+                          example:
+                            "https://kauth.kakao.com/oauth/authorize?client_id=xxx&redirect_uri=xxx&response_type=code",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };

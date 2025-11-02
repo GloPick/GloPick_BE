@@ -3,19 +3,12 @@ import {
   UserCareerProfile,
   CountryRecommendation,
 } from "../types/countryRecommendation";
-import { CountryRecommendationService } from "../services/countryRecommendationService";
+import {
+  CountryRecommendationService,
+  saveWeights,
+} from "../services/countryRecommendationService";
 import { asyncHandler } from "../utils/asyncHandler";
-
-// saveWeights 함수 import (가중치 사용할 수 있도록)
-let savedWeights = { language: 30, job: 30, qualityOfLife: 40 };
-export const saveWeights = (weights: {
-  language: number;
-  job: number;
-  qualityOfLife: number;
-}) => {
-  savedWeights = weights;
-};
-export const getSavedWeights = () => savedWeights;
+import { SUPPORTED_LANGUAGES, JOB_FIELDS } from "../constants/dropdownOptions";
 
 // 비회원 국가 추천 요청 처리 (회원과 동일한 로직, DB 저장 없음)
 export const getGuestCountryRecommendations = asyncHandler(
@@ -129,7 +122,7 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
   }
 
   // ISCO 코드 유효성 검증
-  const validISCOCodes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+  const validISCOCodes: string[] = JOB_FIELDS.map((field) => field.code);
   if (!validISCOCodes.includes(profile.jobField.code)) {
     return "ISCO-08 표준 직무 분류 코드를 선택해주세요.";
   }
@@ -152,17 +145,7 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
   }
 
   // 언어 검증
-  const supportedLanguages = [
-    "English",
-    "Japanese",
-    "Chinese",
-    "German",
-    "French",
-    "Spanish",
-    "Korean",
-    "Other",
-  ];
-  if (!supportedLanguages.includes(profile.language)) {
+  if (!SUPPORTED_LANGUAGES.includes(profile.language as any)) {
     return "지원되는 언어를 선택해주세요.";
   }
 

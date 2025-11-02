@@ -33,7 +33,8 @@ export interface CountryData {
   region: string;
   languages: string[];
   gdpPerCapita?: number; // World Bank API에서 가져올 데이터
-  employmentRate?: number; // ILOSTAT API에서 가져올 데이터 (고용률)
+  employmentRate?: number; // ILOSTAT API에서 가져올 데이터 (전체 고용률)
+  iscoEmploymentData?: Map<string, number>; // ISCO-08 대분류별 고용 데이터
   population?: number;
 }
 

@@ -29,12 +29,13 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     });
   }
 
+  // 사용자가 입력한 가중치를 그대로 사용
   const finalQualityWeights = {
-    income: qualityOfLifeWeights.income || 20,
-    jobs: qualityOfLifeWeights.jobs || 20,
-    health: qualityOfLifeWeights.health || 20,
-    lifeSatisfaction: qualityOfLifeWeights.lifeSatisfaction || 20,
-    safety: qualityOfLifeWeights.safety || 20,
+    income: qualityOfLifeWeights.income ?? 0,
+    jobs: qualityOfLifeWeights.jobs ?? 0,
+    health: qualityOfLifeWeights.health ?? 0,
+    lifeSatisfaction: qualityOfLifeWeights.lifeSatisfaction ?? 0,
+    safety: qualityOfLifeWeights.safety ?? 0,
   };
 
   // 삶의 질 가중치 검증 (합계 100)

@@ -5,7 +5,7 @@ export const countryRecommendationSwaggerDocs = {
       get: {
         summary: "인증된 사용자의 특정 프로필 기반 국가 추천",
         description:
-          "특정 프로필 ID로 국가 추천을 요청합니다. 프로필에 저장된 정보(언어, 희망연봉, 직무, 가중치)를 사용하여 국가를 추천합니다.",
+          "특정 프로필 ID로 국가 추천을 요청합니다. 프로필에 저장된 정보(언어, QOL, 직무, 가중치)를 사용하여 국가를 추천합니다.",
         tags: ["Country Recommendations"],
         security: [{ bearerAuth: [] }],
         parameters: [

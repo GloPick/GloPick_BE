@@ -6,6 +6,61 @@ import { AuthRequest } from "../middlewares/authMiddleware";
 import SimulationResult from "../models/simulationResult";
 import CountryRecommendationResult from "../models/countryRecommendationResult";
 
+// 시뮬레이션 결과 포맷팅 헬퍼 함수
+const formatSimulationResult = (simObj: any) => {
+  const result = simObj.result || {};
+  return {
+    simulationId: simObj._id,
+    country: simObj.country,
+    recommendedCity: result.recommendedCity || null,
+    localInfo: result.localInfo || {},
+    initialSetup: result.initialSetup || {},
+    jobReality: result.jobReality || {},
+    culturalIntegration: result.culturalIntegration || {},
+  };
+};
+
+// 국가 추천 결과 포맷팅 헬퍼 함수
+const formatRecommendationResult = (recObj: any) => {
+  const profile = recObj.profile || {};
+  return {
+    _id: recObj._id,
+    profile: {
+      language: profile.language || null,
+      desiredJob: profile.desiredJob || null,
+      qualityOfLifeWeights: profile.qualityOfLifeWeights || null,
+      weights: profile.weights || null,
+      additionalNotes: profile.additionalNotes || null,
+    },
+    recommendations: recObj.recommendations.map((country: any) => ({
+      country: country.country,
+      score: country.score,
+      rank: country.rank,
+      details: {
+        languageScore: country.details?.languageScore || 0,
+        jobScore: country.details?.jobScore || 0,
+        qualityOfLifeScore: country.details?.qualityOfLifeScore || 0,
+      },
+      economicData: {
+        gdpPerCapita: country.economicData?.gdpPerCapita || null,
+        employmentRate: country.economicData?.employmentRate || null,
+      },
+      countryInfo: {
+        region: country.countryInfo?.region || null,
+        languages: country.countryInfo?.languages || [],
+        population: country.countryInfo?.population || null,
+      },
+    })),
+    weights: {
+      language: recObj.weights?.language || 0,
+      job: recObj.weights?.job || 0,
+      qualityOfLife:
+        recObj.weights?.qualityOfLife || recObj.weights?.salary || 0,
+    },
+    createdAt: recObj.createdAt,
+  };
+};
+
 // 사용자 정보 조회 API
 export const getUserInfo = async (req: AuthRequest, res: Response) => {
   try {
@@ -113,16 +168,17 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   }
   // 각 이력 정보를 포맷팅
   const formattedProfiles = profiles.map((profile) => {
-    const profileObj = profile.toObject() as any;
+    const profileObj = profile.toObject();
+    const user = profileObj.user as any; // populate된 user 데이터
 
     return {
       profileId: profileObj._id,
       user: {
-        userId: profileObj.user?._id || null,
-        name: profileObj.user?.name || null,
-        email: profileObj.user?.email || null,
+        userId: user?._id || null,
+        name: user?.name || null,
+        email: user?.email || null,
       },
-      languages: profileObj.language, // 단일 언어로 변경
+      languages: profileObj.language,
       desiredJob: profileObj.desiredJob,
       qualityOfLifeWeights: profileObj.qualityOfLifeWeights,
       weights: profileObj.weights,
@@ -223,20 +279,9 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const formattedSimulations = simulations.map((sim) => {
-      const simObj = sim.toObject();
-      const result = simObj.result || {};
-
-      return {
-        simulationId: simObj._id,
-        country: simObj.country,
-        recommendedCity: result.recommendedCity || null,
-        localInfo: result.localInfo || {},
-        initialSetup: result.initialSetup || {},
-        jobReality: result.jobReality || {},
-        culturalIntegration: result.culturalIntegration || {},
-      };
-    });
+    const formattedSimulations = simulations.map((sim) =>
+      formatSimulationResult(sim.toObject())
+    );
 
     res.status(200).json({
       code: 200,
@@ -276,48 +321,9 @@ export const getUserRecommendations = async (
       });
     }
 
-    const formattedRecommendations = recommendations.map((rec) => {
-      const recObj = rec.toObject();
-      const profile = recObj.profile as any; // populate된 데이터 타입 캐스팅
-      return {
-        _id: recObj._id,
-        profile: {
-          language: profile?.language || null,
-          desiredJob: profile?.desiredJob || null,
-          qualityOfLifeWeights: profile?.qualityOfLifeWeights || null,
-          weights: profile?.weights || null,
-          additionalNotes: profile?.additionalNotes || null,
-        },
-        recommendations: recObj.recommendations.map((country: any) => ({
-          country: country.country,
-          score: country.score,
-          rank: country.rank,
-          details: {
-            languageScore: country.details?.languageScore || 0,
-            jobScore: country.details?.jobScore || 0,
-            qualityOfLifeScore: country.details?.qualityOfLifeScore || 0,
-          },
-          economicData: {
-            gdpPerCapita: country.economicData?.gdpPerCapita || null,
-            employmentRate: country.economicData?.employmentRate || null,
-          },
-          countryInfo: {
-            region: country.countryInfo?.region || null,
-            languages: country.countryInfo?.languages || [],
-            population: country.countryInfo?.population || null,
-          },
-        })),
-        weights: {
-          language: recObj.weights?.language || 0,
-          job: recObj.weights?.job || 0,
-          qualityOfLife:
-            (recObj.weights as any)?.qualityOfLife ||
-            (recObj.weights as any)?.salary ||
-            0, // 기존 salary 필드 호환성 지원
-        },
-        createdAt: recObj.createdAt,
-      };
-    });
+    const formattedRecommendations = recommendations.map((rec) =>
+      formatRecommendationResult(rec.toObject())
+    );
 
     res.status(200).json({
       code: 200,
@@ -360,48 +366,9 @@ export const getRecommendationsByProfileId = async (
       });
     }
 
-    const formattedRecommendations = recommendations.map((rec) => {
-      const recObj = rec.toObject() as any;
-      const profile = recObj.profile || {};
-      return {
-        _id: recObj._id,
-        profile: {
-          language: profile.language || null,
-          desiredJob: profile.desiredJob || null,
-          qualityOfLifeWeights: profile.qualityOfLifeWeights || null,
-          weights: profile.weights || null,
-          additionalNotes: profile.additionalNotes || null,
-        },
-        recommendations: recObj.recommendations.map((country: any) => ({
-          country: country.country,
-          score: country.score,
-          rank: country.rank,
-          details: {
-            languageScore: country.details?.languageScore || 0,
-            jobScore: country.details?.jobScore || 0,
-            qualityOfLifeScore: country.details?.qualityOfLifeScore || 0,
-          },
-          economicData: {
-            gdpPerCapita: country.economicData?.gdpPerCapita || null,
-            employmentRate: country.economicData?.employmentRate || null,
-          },
-          countryInfo: {
-            region: country.countryInfo?.region || null,
-            languages: country.countryInfo?.languages || [],
-            population: country.countryInfo?.population || null,
-          },
-        })),
-        weights: {
-          language: recObj.weights?.language || 0,
-          job: recObj.weights?.job || 0,
-          qualityOfLife:
-            (recObj.weights as any)?.qualityOfLife ||
-            (recObj.weights as any)?.salary ||
-            0, // 기존 salary 필드 호환성 지원
-        },
-        createdAt: recObj.createdAt,
-      };
-    });
+    const formattedRecommendations = recommendations.map((rec) =>
+      formatRecommendationResult(rec.toObject())
+    );
 
     res.status(200).json({
       code: 200,
@@ -493,21 +460,9 @@ export const getSimulationsByProfileId = async (
       });
     }
 
-    const formatted = simulations.map((sim) => {
-      const obj = sim.toObject();
-      const result = obj.result || {};
-
-      return {
-        simulationId: obj._id,
-        country: obj.country,
-        recommendedCity: result.recommendedCity || null,
-
-        localInfo: result.localInfo || {},
-        initialSetup: result.initialSetup || {},
-        jobReality: result.jobReality || {},
-        culturalIntegration: result.culturalIntegration || {},
-      };
-    });
+    const formatted = simulations.map((sim) =>
+      formatSimulationResult(sim.toObject())
+    );
 
     res.status(200).json({
       code: 200,

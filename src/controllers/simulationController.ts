@@ -5,41 +5,102 @@ import SimulationResult from "../models/simulationResult";
 import UserProfile from "../models/UserProfile";
 import {
   generateSimulationResponse,
-  getCityRecommendations,
   getSimpleCityRecommendations,
-  getDetailedCityRecommendations,
 } from "../services/gptsimulationService";
 import { createFlightLinks } from "../utils/flightLinkGenerator";
 import SimulationList from "../models/simulationList";
-import { JOB_FIELDS } from "../constants/dropdownOptions";
+import { JOB_FIELDS, REQUIRED_FACILITIES } from "../constants/dropdownOptions";
+import { searchFacilities, getCityCenter } from "../services/googleMapsService";
 
-// 언어 능력 평가 함수 (단일 언어로 변경)
-const assessLanguageLevel = (language: string): string => {
-  if (!language || language.trim() === "") {
-    return "부족함";
+// ===== 헬퍼 함수 =====
+
+// 시뮬레이션 입력 검증 헬퍼 함수
+const validateSimulationInput = (
+  input: any,
+  cityIndex: number,
+  initialBudget: string,
+  requiredFacilities: string[],
+  departureAirport: string
+): { isValid: boolean; error?: { code: number; message: string } } => {
+  // 도시 인덱스 검증
+  if (
+    isNaN(cityIndex) ||
+    cityIndex < 0 ||
+    cityIndex >= (input.recommendedCities?.length || 0)
+  ) {
+    return {
+      isValid: false,
+      error: {
+        code: 400,
+        message: "유효하지 않은 도시 인덱스입니다. (0-2 범위)",
+      },
+    };
   }
 
-  // 영어인 경우 우수함으로 평가
-  if (language === "English") {
-    return "우수함";
+  // 초기 예산 검증
+  if (!initialBudget) {
+    return {
+      isValid: false,
+      error: { code: 400, message: "초기 정착 예산을 입력해주세요." },
+    };
   }
 
-  // 기타 주요 언어들은 보통으로 평가
-  const majorLanguages = ["German", "French", "Spanish", "Japanese", "Chinese"];
-  if (majorLanguages.includes(language)) {
-    return "보통";
+  // 필수 편의시설 검증
+  if (!Array.isArray(requiredFacilities) || requiredFacilities.length === 0) {
+    return {
+      isValid: false,
+      error: {
+        code: 400,
+        message: "필요한 시설을 최소 1개 이상 선택해주세요.",
+      },
+    };
   }
 
-  // 한국어나 기타 언어는 부족함으로 평가 (해외 이주 관점에서)
-  return "부족함";
+  if (requiredFacilities.length > 5) {
+    return {
+      isValid: false,
+      error: {
+        code: 400,
+        message: "필수 편의시설은 최대 5개까지 선택할 수 있습니다.",
+      },
+    };
+  }
+
+  // 유효한 시설인지 검증
+  const validFacilities = REQUIRED_FACILITIES.map(
+    (f) => f.value
+  ) as readonly string[];
+  const invalidFacilities = requiredFacilities.filter(
+    (f) => !(validFacilities as readonly string[]).includes(f)
+  );
+
+  if (invalidFacilities.length > 0) {
+    return {
+      isValid: false,
+      error: {
+        code: 400,
+        message: `유효하지 않은 시설: ${invalidFacilities.join(", ")}`,
+      },
+    };
+  }
+
+  // 출발 공항 검증
+  if (!departureAirport) {
+    return {
+      isValid: false,
+      error: { code: 400, message: "출발 공항을 선택해주세요." },
+    };
+  }
+
+  return { isValid: true };
 };
 
 // 시뮬레이션 추가 정보 입력 및 저장 (도시 선택 후)
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
   try {
+    const { id } = req.params; // inputId를 parameter로 받음
     const {
-      inputId,
-      selectedCity,
+      selectedCityIndex,
       initialBudget,
       requiredFacilities,
       departureAirport,
@@ -47,7 +108,7 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
 
     // 기본 SimulationInput 조회
     const input = await SimulationInput.findOne({
-      _id: inputId,
+      _id: id,
       user: req.user!._id,
     });
 
@@ -59,67 +120,75 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // 선택한 도시 검증 (인덱스 또는 도시명 지원)
-    if (selectedCity === undefined || selectedCity === null) {
+    // 선택한 도시 인덱스 검증
+    if (selectedCityIndex === undefined || selectedCityIndex === null) {
       return res.status(400).json({
         code: 400,
-        message: "도시를 선택해주세요.",
+        message: "도시 인덱스를 입력해주세요.",
         data: null,
       });
     }
 
-    let actualSelectedCity: string;
+    const cityIndex = Number(selectedCityIndex);
 
-    // 숫자인 경우 인덱스로 처리
-    if (!isNaN(Number(selectedCity))) {
-      const cityIndex = Number(selectedCity);
-      if (
-        cityIndex < 0 ||
-        cityIndex >= (input.recommendedCities?.length || 0)
-      ) {
-        return res.status(400).json({
-          code: 400,
-          message: "유효하지 않은 도시 인덱스입니다.",
-          data: null,
-        });
-      }
-      actualSelectedCity = input.recommendedCities![cityIndex];
-    } else {
-      // 문자열인 경우 도시명으로 처리
-      if (!input.recommendedCities?.includes(selectedCity)) {
-        return res.status(400).json({
-          code: 400,
-          message: "추천된 도시 중에서 선택해주세요.",
-          data: null,
-        });
-      }
-      actualSelectedCity = selectedCity;
-    }
+    // 통합 검증 실행
+    const validation = validateSimulationInput(
+      input,
+      cityIndex,
+      initialBudget,
+      requiredFacilities,
+      departureAirport
+    );
 
-    // 초기 예산 검증
-    if (!initialBudget) {
-      return res.status(400).json({
-        code: 400,
-        message: "초기 정착 예산을 입력해주세요.",
+    if (!validation.isValid) {
+      return res.status(validation.error!.code).json({
+        code: validation.error!.code,
+        message: validation.error!.message,
         data: null,
       });
     }
 
-    // 필수 편의시설 검증
-    if (!requiredFacilities || requiredFacilities.trim() === "") {
-      return res.status(400).json({
-        code: 400,
-        message: "필요한 시설 및 서비스를 입력해주세요.",
-        data: null,
-      });
-    }
+    const actualSelectedCity = input.recommendedCities![cityIndex];
 
-    // 출발 공항 검증
-    if (!departureAirport) {
-      return res.status(400).json({
-        code: 400,
-        message: "출발 공항을 선택해주세요.",
-        data: null,
+    // 중복 체크: 동일한 조건으로 이미 저장된 입력이 있는지 확인
+    // selectedCity가 null이 아닌 완성된 입력들만 조회
+    const existingInputs = await SimulationInput.find({
+      user: req.user!._id,
+      profile: input.profile,
+      selectedCountry: input.selectedCountry,
+      selectedCity: { $ne: null }, // 완성된 입력만 조회
+      initialBudget: { $ne: null },
+      departureAirport: { $ne: null },
+    });
+
+    // 배열 비교를 위한 정렬된 문자열 비교
+    const sortedRequiredFacilities = [...requiredFacilities].sort().join(",");
+    const existingInput = existingInputs.find((existing) => {
+      // 모든 조건이 일치하는지 확인
+      const isSameCity = existing.selectedCity === actualSelectedCity;
+      const isSameBudget = existing.initialBudget === initialBudget;
+      const isSameAirport = existing.departureAirport === departureAirport;
+      const sortedExisting = [...(existing.requiredFacilities || [])]
+        .sort()
+        .join(",");
+      const isSameFacilities = sortedExisting === sortedRequiredFacilities;
+
+      return isSameCity && isSameBudget && isSameAirport && isSameFacilities;
+    });
+
+    if (existingInput) {
+      return res.status(409).json({
+        code: 409,
+        message: "이미 동일한 조건으로 입력 정보가 저장되어 있습니다.",
+        data: {
+          isExisting: true,
+          inputId: existingInput._id,
+          selectedCountry: existingInput.selectedCountry,
+          selectedCity: existingInput.selectedCity,
+          initialBudget: existingInput.initialBudget,
+          requiredFacilities: existingInput.requiredFacilities,
+          departureAirport: existingInput.departureAirport,
+        },
       });
     }
 
@@ -135,6 +204,7 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
       code: 201,
       message: "시뮬레이션 입력 정보 저장 성공",
       data: {
+        isExisting: false,
         inputId: input._id,
         selectedCountry: input.selectedCountry,
         selectedCity: input.selectedCity,
@@ -149,8 +219,7 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 도시 추천 (국가 추천 이후 바로 실행)
-// 도시 추천 (국가 추천 이후 바로 실행)
+// 도시 추천
 export const recommendCities = async (req: AuthRequest, res: Response) => {
   const { recommendationId, profileId } = req.params;
   const { selectedCountryIndex } = req.body;
@@ -187,6 +256,27 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
 
     const selectedCountry =
       recommendation.recommendations[selectedCountryIndex].country;
+
+    // 중복 체크: 동일한 국가로 이미 도시 추천을 받았는지 확인
+    const existingInput = await SimulationInput.findOne({
+      user: req.user!._id,
+      profile: profileId,
+      selectedCountry: selectedCountry,
+    }).sort({ createdAt: -1 }); // 가장 최근 것
+
+    if (existingInput) {
+      console.log("기존 도시 추천 발견:", existingInput._id);
+      return res.status(409).json({
+        code: 409,
+        message: "이미 해당 국가에 대한 도시 추천을 받았습니다.",
+        data: {
+          isExisting: true,
+          inputId: existingInput._id,
+          selectedCountry: existingInput.selectedCountry,
+          recommendedCities: existingInput.recommendedCities,
+        },
+      });
+    }
 
     // 프로필 정보 조회
     const profile = await UserProfile.findById(profileId);
@@ -225,6 +315,7 @@ export const recommendCities = async (req: AuthRequest, res: Response) => {
       code: 200,
       message: "도시 추천 성공",
       data: {
+        isExisting: false,
         inputId: newInput._id,
         selectedCountry,
         recommendedCities: cityRecommendations,
@@ -267,43 +358,7 @@ export const generateAndSaveSimulation = async (
       });
     }
 
-    // 필수 필드 검증
-    if (
-      typeof selectedCityIndex !== "number" ||
-      !input.recommendedCities[selectedCityIndex]
-    ) {
-      return res.status(400).json({
-        code: 400,
-        message: "유효한 도시 인덱스가 필요합니다.",
-        data: null,
-      });
-    }
-
-    if (!initialBudget) {
-      return res.status(400).json({
-        code: 400,
-        message: "초기 정착 예산을 입력해주세요.",
-        data: null,
-      });
-    }
-
-    if (!requiredFacilities || requiredFacilities.trim() === "") {
-      return res.status(400).json({
-        code: 400,
-        message: "필요한 시설 및 서비스를 입력해주세요.",
-        data: null,
-      });
-    }
-
-    if (!departureAirport) {
-      return res.status(400).json({
-        code: 400,
-        message: "출발 공항을 선택해주세요.",
-        data: null,
-      });
-    }
-
-    // 이미 생성된 시뮬레이션 확인
+    // 이미 생성된 시뮬레이션 확인 (조기 체크로 불필요한 검증 방지)
     const existing = await SimulationResult.findOne({
       input: input._id,
       user: req.user!._id,
@@ -320,14 +375,32 @@ export const generateAndSaveSimulation = async (
             ...existing.result,
           },
           flightLinks: createFlightLinks(
-            departureAirport,
-            input.selectedCity ?? input.recommendedCities[selectedCityIndex]
+            input.departureAirport || departureAirport,
+            input.selectedCity || input.recommendedCities[selectedCityIndex]
           ),
         },
       });
     }
 
-    // SimulationInput 업데이트
+    // 필수 필드 검증 (헬퍼 함수 사용)
+    const cityIndex = Number(selectedCityIndex);
+    const validation = validateSimulationInput(
+      input,
+      cityIndex,
+      initialBudget,
+      requiredFacilities,
+      departureAirport
+    );
+
+    if (!validation.isValid) {
+      return res.status(validation.error!.code).json({
+        code: validation.error!.code,
+        message: validation.error!.message,
+        data: null,
+      });
+    }
+
+    // SimulationInput 업데이트 (이미 존재 체크 후이므로 이 코드는 실행 안됨 - 위로 이동됨)
     const selectedCity = input.recommendedCities[selectedCityIndex];
     input.selectedCity = selectedCity;
     input.initialBudget = initialBudget;
@@ -340,6 +413,25 @@ export const generateAndSaveSimulation = async (
 
     const flightLinks = createFlightLinks(departureAirport, arrivalAirportCode);
 
+    // Google Maps API로 편의시설 위치 정보 조회
+    let facilityLocations = {};
+    if (requiredFacilities.length > 0) {
+      try {
+        facilityLocations = await searchFacilities(
+          selectedCity,
+          input.selectedCountry,
+          requiredFacilities
+        );
+        const foundCount = Object.keys(facilityLocations).length;
+        console.log(
+          `✅ Google Maps API: ${selectedCity}의 편의시설 위치 조회 완료 (${foundCount}/${requiredFacilities.length}개 발견)`
+        );
+      } catch (error) {
+        console.error("Google Maps API 호출 실패:", error);
+        // API 실패 시에도 시뮬레이션은 계속 진행
+      }
+    }
+
     const { ...restResult } = gptResult;
 
     const saved = await SimulationResult.create({
@@ -348,6 +440,7 @@ export const generateAndSaveSimulation = async (
       country: input.selectedCountry,
       result: {
         ...restResult,
+        facilityLocations, // Google Maps 위치 정보 추가
       },
     });
 
@@ -481,56 +574,57 @@ export const getSimulationList = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 국가 선택 후 GPT를 통한 도시 추천
-export const selectCountryAndGetCities = async (
-  req: AuthRequest,
-  res: Response
-) => {
+// Google Maps API 테스트
+export const testGoogleMaps = async (req: Request, res: Response) => {
   try {
-    const { selectedCountry, profileId } = req.body;
+    const { city, country, facilities } = req.body;
 
-    if (!selectedCountry || !profileId) {
+    // 입력 검증
+    if (!city || !country || !facilities || !Array.isArray(facilities)) {
       return res.status(400).json({
+        success: false,
         code: 400,
-        message: "선택한 국가와 프로필 ID가 필요합니다.",
+        message: "city, country, facilities(배열)가 필요합니다.",
         data: null,
       });
     }
 
-    const profile = await UserProfile.findById(profileId);
-    if (!profile) {
-      return res.status(404).json({
-        code: 404,
-        message: "프로필을 찾을 수 없습니다.",
-        data: null,
-      });
-    }
+    console.log(`🗺️ Google Maps API 테스트 시작: ${city}, ${country}`);
 
-    // GPT를 통한 도시 추천 (ISCO 코드 사용)
-    const jobCode = profile.desiredJob || "2"; // 기본값: 전문가
-    const jobField =
-      JOB_FIELDS.find((field) => field.code === jobCode) || JOB_FIELDS[1];
-    const recommendedCities = await getDetailedCityRecommendations(
-      selectedCountry,
-      jobField.nameKo,
-      profile.language
-    );
+    // 도시 중심 좌표 가져오기
+    const mapCenter = await getCityCenter(city, country);
+    console.log(`✅ 도시 중심 좌표:`, mapCenter);
+
+    // 편의시설 위치 검색
+    const facilityLocations = await searchFacilities(city, country, facilities);
+    console.log(`✅ 편의시설 검색 완료:`, Object.keys(facilityLocations));
 
     res.status(200).json({
+      success: true,
       code: 200,
-      message: "도시 추천이 완료되었습니다.",
+      message: "Google Maps API 테스트 성공",
       data: {
-        selectedCountry,
-        recommendedCities,
-        profileId,
+        mapCenter,
+        facilityLocations,
+        summary: {
+          city,
+          country,
+          facilitiesSearched: facilities.length,
+          totalLocationsFound: Object.values(facilityLocations).reduce(
+            (sum, arr) => sum + arr.length,
+            0
+          ),
+        },
       },
     });
   } catch (error) {
-    console.error("도시 추천 실패:", error);
+    console.error("❌ Google Maps API 테스트 실패:", error);
     res.status(500).json({
+      success: false,
       code: 500,
-      message: "도시 추천 중 오류가 발생했습니다.",
+      message: "Google Maps API 호출 중 오류가 발생했습니다.",
       data: null,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };

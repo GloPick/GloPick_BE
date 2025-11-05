@@ -74,6 +74,49 @@ export const countryRecommendationSwaggerDocs = {
           400: { description: "잘못된 요청 데이터" },
           401: { description: "인증 실패" },
           404: { description: "프로필을 찾을 수 없음" },
+          409: {
+            description:
+              "중복된 추천 요청 (이미 동일한 이력으로 추천을 받았습니다)",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: false },
+                    message: {
+                      type: "string",
+                      example: "이미 동일한 이력으로 추천을 받았습니다.",
+                    },
+                    data: {
+                      type: "object",
+                      properties: {
+                        isExisting: { type: "boolean", example: true },
+                        recommendationId: {
+                          type: "string",
+                          example: "660f62c89abf1b001c66e678",
+                          description: "기존 추천 결과 ID",
+                        },
+                        profileId: {
+                          type: "string",
+                          example: "660f62c89abf1b001c66e678",
+                        },
+                        createdAt: {
+                          type: "string",
+                          format: "date-time",
+                          example: "2025-09-25T10:00:00Z",
+                          description: "기존 추천 생성 시간",
+                        },
+                        recommendations: {
+                          type: "array",
+                          description: "기존 추천 결과",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           500: { description: "서버 오류" },
         },
       },

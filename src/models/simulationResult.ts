@@ -20,6 +20,11 @@ const simulationResultSchema = new mongoose.Schema({
       culturalTips: String,
       warnings: String,
     },
+    // 편의시설 위치 정보 (Google Maps API)
+    facilityLocations: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     // 한 달 예산 전략 (사용자 초기 예산 기반)
     estimatedMonthlyCost: {
       housing: String,

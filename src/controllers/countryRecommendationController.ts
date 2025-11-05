@@ -17,13 +17,32 @@ import { oecdService } from "../services/oecdService";
 // 언어 문자열을 표준화하는 함수
 function normalizeLanguage(language: string): string {
   const languageMap: { [key: string]: string } = {
+    Korean: "korean",
     English: "english",
+    Spanish: "spanish",
+    French: "french",
+    German: "german",
+    Portuguese: "portuguese",
+    Italian: "italian",
+    Dutch: "dutch",
+    Swedish: "swedish",
+    Norwegian: "norwegian",
+    Danish: "danish",
+    Finnish: "finnish",
+    Polish: "polish",
+    Czech: "czech",
+    Hungarian: "hungarian",
+    Greek: "greek",
+    Turkish: "turkish",
     Japanese: "japanese",
     Chinese: "chinese",
-    German: "german",
-    French: "french",
-    Spanish: "spanish",
-    Korean: "korean",
+    Hebrew: "hebrew",
+    Slovak: "slovak",
+    Slovene: "slovene",
+    Icelandic: "icelandic",
+    Estonian: "estonian",
+    Latvian: "latvian",
+    Lithuanian: "lithuanian",
     Other: "english", // 기본값으로 영어
   };
   return languageMap[language] || "english";
@@ -209,6 +228,30 @@ export const getCountryRecommendations = asyncHandler(
 
       console.log("추천 요청 프로필:", userProfile);
       console.log("적용된 가중치:", weights);
+
+      // 중복 체크: 동일한 프로필로 이미 추천 결과가 있는지 확인
+      const existingRecommendation = await CountryRecommendationResult.findOne({
+        user: authReq.user!._id,
+        profile: profileId,
+        "weights.language": weights.language,
+        "weights.job": weights.job,
+        "weights.qualityOfLife": weights.qualityOfLife,
+      }).sort({ createdAt: -1 }); // 가장 최근 것
+
+      if (existingRecommendation) {
+        console.log("기존 추천 결과 발견:", existingRecommendation._id);
+        return res.status(409).json({
+          success: false,
+          message: "이미 동일한 이력으로 추천을 받았습니다.",
+          data: {
+            isExisting: true,
+            recommendationId: existingRecommendation._id,
+            profileId: profileId,
+            createdAt: existingRecommendation.createdAt,
+            recommendations: existingRecommendation.recommendations,
+          },
+        });
+      }
 
       // 가중치를 서비스에서 사용할 수 있도록 저장
       saveWeights(weights);

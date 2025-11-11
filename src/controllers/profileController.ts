@@ -13,7 +13,6 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
   const {
     language,
     desiredJob,
-    additionalNotes,
     qualityOfLifeWeights, // OECD Better Life Index 5가지 가중치
     weights, // 전체 추천 가중치 (언어, 직무, 삶의 질)
   } = req.body;
@@ -86,8 +85,6 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     return (
       profile.language === language &&
       profile.desiredJob === desiredJob &&
-      normalize(profile.additionalNotes || "") ===
-        normalize(additionalNotes || "") &&
       // 삶의 질 가중치 비교
       profile.qualityOfLifeWeights?.income === finalQualityWeights.income &&
       profile.qualityOfLifeWeights?.jobs === finalQualityWeights.jobs &&
@@ -118,7 +115,6 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     desiredJob,
     qualityOfLifeWeights: finalQualityWeights, // OECD 가중치 저장
     weights: finalWeights, // 전체 추천 가중치 저장
-    additionalNotes,
   });
 
   res.status(201).json({

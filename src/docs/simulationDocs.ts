@@ -549,6 +549,8 @@ export const simulationSwaggerDocs = {
     "/api/simulation/{id}/generate": {
       post: {
         summary: "선택한 도시 기반 시뮬레이션 생성 및 저장",
+        description:
+          "이전 단계(/api/simulation/input/{id})에서 저장된 정보를 사용하여 GPT 기반 시뮬레이션을 생성합니다. Request body 없이 inputId만 전달하면 됩니다.",
         tags: ["Simulation"],
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -557,102 +559,10 @@ export const simulationSwaggerDocs = {
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "SimulationInput ID (도시 추천에서 받은 inputId)",
+            description:
+              "SimulationInput ID (추가 정보 입력 단계에서 저장된 inputId)",
           },
         ],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  selectedCityIndex: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 2,
-                    example: 0,
-                    description: "선택한 도시의 인덱스 (0-2)",
-                  },
-                  initialBudget: {
-                    type: "string",
-                    enum: [
-                      "300만~500만원",
-                      "500만~800만원",
-                      "800만~1200만원",
-                      "1200만~1500만원",
-                      "1500만원 이상",
-                    ],
-                    example: "500만~800만원",
-                    description: "초기 정착 예산",
-                  },
-                  requiredFacilities: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                      enum: [
-                        "hospital",
-                        "clinic",
-                        "pharmacy",
-                        "elementary_school",
-                        "middle_school",
-                        "high_school",
-                        "university",
-                        "subway_station",
-                        "train_station",
-                        "airport",
-                        "supermarket",
-                        "convenience_store",
-                        "korean_grocery",
-                        "korean_restaurant",
-                        "korean_embassy",
-                        "bank",
-                        "police_station",
-                        "park",
-                        "library",
-                        "movie_theater",
-                        "shopping_mall",
-                        "tourist_attraction",
-                        "church",
-                        "temple",
-                      ],
-                    },
-                    example: [
-                      "hospital",
-                      "subway_station",
-                      "supermarket",
-                      "bank",
-                      "park",
-                    ],
-                    description: "필요한 시설 (최대 5개 선택)",
-                    maxItems: 5,
-                    minItems: 1,
-                  },
-                  departureAirport: {
-                    type: "string",
-                    enum: [
-                      "인천국제공항",
-                      "김포국제공항",
-                      "김해국제공항",
-                      "제주국제공항",
-                      "청주국제공항",
-                      "대구국제공항",
-                      "무안국제공항",
-                    ],
-                    example: "인천국제공항",
-                    description: "출발 공항",
-                  },
-                },
-                required: [
-                  "selectedCityIndex",
-                  "initialBudget",
-                  "requiredFacilities",
-                  "departureAirport",
-                ],
-              },
-            },
-          },
-        },
         responses: {
           201: {
             description: "시뮬레이션 생성 및 저장 완료",

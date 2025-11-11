@@ -133,50 +133,88 @@ export const mypageSwaggerDocs = {
             content: {
               "application/json": {
                 schema: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      languages: {
-                        type: "array",
-                        items: {
-                          type: "object",
-                          properties: {
-                            language: { type: "string", example: "English" },
-                            level: { type: "string", example: "상급" },
-                          },
-                        },
-                        example: [
-                          { language: "English", level: "상급" },
-                          { language: "Korean", level: "원어민" },
-                        ],
-                      },
-                      desiredSalary: {
-                        type: "string",
-                        example: "3천만 ~ 5천만",
-                      },
-                      desiredJob: {
+                  type: "object",
+                  properties: {
+                    code: { type: "number", example: 200 },
+                    message: { type: "string", example: "이력 정보 조회 성공" },
+                    data: {
+                      type: "array",
+                      items: {
                         type: "object",
                         properties: {
-                          mainCategory: {
+                          profileId: {
                             type: "string",
-                            example: "IT / 개발",
+                            example: "60c72b2f9b1d8c001c8a4b53",
                           },
-                          subCategory: {
+                          language: {
                             type: "string",
-                            example: "백엔드 개발자",
+                            example: "English",
+                            description: "사용 가능한 언어",
                           },
-                        },
-                      },
-                      additionalNotes: {
-                        type: "string",
-                        example: "정규직 희망, 재택 근무 가능",
-                      },
-                      user: {
-                        type: "object",
-                        properties: {
-                          name: { type: "string", example: "user1" },
-                          email: { type: "string", example: "user1@1111" },
+                          desiredJob: {
+                            type: "string",
+                            example: "2",
+                            description: "희망 직무 (ISCO-08 대분류 코드)",
+                          },
+                          qualityOfLifeWeights: {
+                            type: "object",
+                            properties: {
+                              income: {
+                                type: "number",
+                                example: 25,
+                                description: "소득 가중치",
+                              },
+                              jobs: {
+                                type: "number",
+                                example: 20,
+                                description: "직업 가중치",
+                              },
+                              health: {
+                                type: "number",
+                                example: 20,
+                                description: "건강 가중치",
+                              },
+                              lifeSatisfaction: {
+                                type: "number",
+                                example: 20,
+                                description: "삶의 만족도 가중치",
+                              },
+                              safety: {
+                                type: "number",
+                                example: 15,
+                                description: "안전 가중치",
+                              },
+                            },
+                          },
+                          weights: {
+                            type: "object",
+                            properties: {
+                              languageWeight: {
+                                type: "number",
+                                example: 30,
+                                description: "언어 가중치",
+                              },
+                              jobWeight: {
+                                type: "number",
+                                example: 30,
+                                description: "직무 가중치",
+                              },
+                              qualityOfLifeWeight: {
+                                type: "number",
+                                example: 40,
+                                description: "삶의 질 가중치",
+                              },
+                            },
+                          },
+                          additionalNotes: {
+                            type: "string",
+                            example: "원격 근무 가능한 환경 선호",
+                          },
+                          createdAt: {
+                            type: "string",
+                            format: "date-time",
+                            example: "2025-04-04T05:34:21.201Z",
+                          },
                         },
                       },
                     },
@@ -186,6 +224,7 @@ export const mypageSwaggerDocs = {
             },
           },
           401: { description: "인증 실패" },
+          404: { description: "이력 정보가 없습니다." },
         },
       },
     },
@@ -211,31 +250,33 @@ export const mypageSwaggerDocs = {
               schema: {
                 type: "object",
                 properties: {
-                  languages: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        language: { type: "string", example: "English" },
-                        level: { type: "string", example: "상급" },
-                      },
-                    },
-                    example: [
-                      { language: "English", level: "상급" },
-                      { language: "Korean", level: "원어민" },
-                    ],
+                  language: {
+                    type: "string",
+                    example: "English",
+                    description: "사용 가능한 언어",
                   },
-                  desiredSalary: { type: "string", example: "3천만 ~ 5천만" },
                   desiredJob: {
+                    type: "string",
+                    example: "2",
+                    description: "희망 직무 (ISCO-08 대분류 코드)",
+                  },
+                  qualityOfLifeWeights: {
                     type: "object",
                     properties: {
-                      mainCategory: { type: "string", example: "IT / 개발" },
-                      subCategory: { type: "string", example: "백엔드 개발자" },
+                      income: { type: "number", example: 25 },
+                      jobs: { type: "number", example: 20 },
+                      health: { type: "number", example: 20 },
+                      lifeSatisfaction: { type: "number", example: 20 },
+                      safety: { type: "number", example: 15 },
                     },
                   },
-                  additionalNotes: {
-                    type: "string",
-                    example: "정규직 희망, 재택 근무 가능",
+                  weights: {
+                    type: "object",
+                    properties: {
+                      languageWeight: { type: "number", example: 30 },
+                      jobWeight: { type: "number", example: 30 },
+                      qualityOfLifeWeight: { type: "number", example: 40 },
+                    },
                   },
                 },
               },
@@ -243,7 +284,46 @@ export const mypageSwaggerDocs = {
           },
         },
         responses: {
-          200: { description: "수정 성공" },
+          200: {
+            description: "수정 성공",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    code: { type: "number", example: 200 },
+                    message: { type: "string", example: "이력 정보 수정 성공" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        profileId: { type: "string" },
+                        languages: { type: "string", example: "English" },
+                        desiredJob: { type: "string", example: "2" },
+                        qualityOfLifeWeights: {
+                          type: "object",
+                          properties: {
+                            income: { type: "number" },
+                            jobs: { type: "number" },
+                            health: { type: "number" },
+                            lifeSatisfaction: { type: "number" },
+                            safety: { type: "number" },
+                          },
+                        },
+                        weights: {
+                          type: "object",
+                          properties: {
+                            languageWeight: { type: "number" },
+                            jobWeight: { type: "number" },
+                            qualityOfLifeWeight: { type: "number" },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           404: { description: "이력 없음" },
         },
       },
@@ -311,26 +391,36 @@ export const mypageSwaggerDocs = {
                                 type: "string",
                                 example: "English",
                               },
-                              desiredSalary: {
-                                type: "string",
-                                example: "3천만 ~ 5천만",
-                              },
                               desiredJob: {
+                                type: "string",
+                                example: "2",
+                              },
+                              qualityOfLifeWeights: {
                                 type: "object",
                                 properties: {
-                                  mainCategory: {
-                                    type: "string",
-                                    example: "교육",
+                                  income: { type: "number", example: 25 },
+                                  jobs: { type: "number", example: 20 },
+                                  health: { type: "number", example: 20 },
+                                  lifeSatisfaction: {
+                                    type: "number",
+                                    example: 20,
                                   },
-                                  subCategory: {
-                                    type: "string",
-                                    example: "과외/튜터",
-                                  },
+                                  safety: { type: "number", example: 15 },
                                 },
                               },
-                              additionalNotes: {
-                                type: "string",
-                                example: "아시아 국가 희망",
+                              weights: {
+                                type: "object",
+                                properties: {
+                                  languageWeight: {
+                                    type: "number",
+                                    example: 30,
+                                  },
+                                  jobWeight: { type: "number", example: 30 },
+                                  qualityOfLifeWeight: {
+                                    type: "number",
+                                    example: 40,
+                                  },
+                                },
                               },
                             },
                           },
@@ -603,26 +693,33 @@ export const mypageSwaggerDocs = {
                               type: "string",
                               example: "English",
                             },
-                            desiredSalary: {
-                              type: "string",
-                              example: "3천만 ~ 5천만",
-                            },
                             desiredJob: {
+                              type: "string",
+                              example: "2",
+                            },
+                            qualityOfLifeWeights: {
                               type: "object",
                               properties: {
-                                mainCategory: {
-                                  type: "string",
-                                  example: "교육",
+                                income: { type: "number", example: 25 },
+                                jobs: { type: "number", example: 20 },
+                                health: { type: "number", example: 20 },
+                                lifeSatisfaction: {
+                                  type: "number",
+                                  example: 20,
                                 },
-                                subCategory: {
-                                  type: "string",
-                                  example: "과외/튜터",
-                                },
+                                safety: { type: "number", example: 15 },
                               },
                             },
-                            additionalNotes: {
-                              type: "string",
-                              example: "아시아 국가 희망",
+                            weights: {
+                              type: "object",
+                              properties: {
+                                languageWeight: { type: "number", example: 30 },
+                                jobWeight: { type: "number", example: 30 },
+                                qualityOfLifeWeight: {
+                                  type: "number",
+                                  example: 40,
+                                },
+                              },
                             },
                           },
                         },

@@ -337,12 +337,9 @@ export const generateAndSaveSimulation = async (
   res: Response
 ) => {
   const { id } = req.params;
-  const {
-    selectedCityIndex,
-    initialBudget,
-    requiredFacilities,
-    departureAirport,
-  } = req.body;
+  // 이제 시뮬레이션 생성시에는 request body를 받지 않습니다.
+  // 추가 정보(selectedCity, initialBudget, requiredFacilities, departureAirport)는
+  // 이전 단계의 saveSimulationInput에서 SimulationInput 문서에 저장되어 있어야 합니다.
 
   try {
     const input = await SimulationInput.findOne({
@@ -375,56 +372,74 @@ export const generateAndSaveSimulation = async (
             ...existing.result,
           },
           flightLinks: createFlightLinks(
-            input.departureAirport || departureAirport,
-            input.selectedCity || input.recommendedCities[selectedCityIndex]
+            input.departureAirport as string,
+            input.selectedCity as string
           ),
         },
       });
     }
 
-    // 필수 필드 검증 (헬퍼 함수 사용)
-    const cityIndex = Number(selectedCityIndex);
-    const validation = validateSimulationInput(
-      input,
-      cityIndex,
-      initialBudget,
-      requiredFacilities,
-      departureAirport
-    );
-
-    if (!validation.isValid) {
-      return res.status(validation.error!.code).json({
-        code: validation.error!.code,
-        message: validation.error!.message,
+    // 생성 시에는 input 문서에 추가 정보가 이미 저장되어 있어야 함
+    if (!input.selectedCity) {
+      return res.status(400).json({
+        code: 400,
+        message:
+          "선택된 도시 정보(selectedCity)가 없습니다. 먼저 추가 정보 입력을 완료해주세요.",
+        data: null,
+      });
+    }
+    if (!input.initialBudget) {
+      return res.status(400).json({
+        code: 400,
+        message:
+          "초기 정착 예산(initialBudget)이 없습니다. 먼저 추가 정보 입력을 완료해주세요.",
+        data: null,
+      });
+    }
+    if (
+      !Array.isArray(input.requiredFacilities) ||
+      input.requiredFacilities.length === 0
+    ) {
+      return res.status(400).json({
+        code: 400,
+        message:
+          "필요한 시설(requiredFacilities)이 없습니다. 먼저 추가 정보 입력을 완료해주세요.",
+        data: null,
+      });
+    }
+    if (!input.departureAirport) {
+      return res.status(400).json({
+        code: 400,
+        message:
+          "출발 공항(departureAirport)이 없습니다. 먼저 추가 정보 입력을 완료해주세요.",
         data: null,
       });
     }
 
-    // SimulationInput 업데이트 (이미 존재 체크 후이므로 이 코드는 실행 안됨 - 위로 이동됨)
-    const selectedCity = input.recommendedCities[selectedCityIndex];
-    input.selectedCity = selectedCity;
-    input.initialBudget = initialBudget;
-    input.requiredFacilities = requiredFacilities;
-    input.departureAirport = departureAirport;
-    await input.save();
+    const selectedCity = input.selectedCity;
 
     const gptResult = await generateSimulationResponse(input);
     const arrivalAirportCode = gptResult?.nearestAirport?.code || selectedCity;
 
-    const flightLinks = createFlightLinks(departureAirport, arrivalAirportCode);
+    const flightLinks = createFlightLinks(
+      input.departureAirport as string,
+      arrivalAirportCode as string
+    );
 
     // Google Maps API로 편의시설 위치 정보 조회
     let facilityLocations = {};
-    if (requiredFacilities.length > 0) {
+    if ((input.requiredFacilities || []).length > 0) {
       try {
         facilityLocations = await searchFacilities(
           selectedCity,
           input.selectedCountry,
-          requiredFacilities
+          input.requiredFacilities
         );
         const foundCount = Object.keys(facilityLocations).length;
         console.log(
-          `✅ Google Maps API: ${selectedCity}의 편의시설 위치 조회 완료 (${foundCount}/${requiredFacilities.length}개 발견)`
+          `✅ Google Maps API: ${selectedCity}의 편의시설 위치 조회 완료 (${foundCount}/${
+            (input.requiredFacilities || []).length
+          }개 발견)`
         );
       } catch (error) {
         console.error("Google Maps API 호출 실패:", error);

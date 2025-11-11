@@ -5,7 +5,7 @@ export const guestSwaggerDocs = {
       post: {
         summary: "비회원 국가 추천",
         description:
-          "비회원이 언어, 연봉, 직무, 우선순위를 입력하여 API 기반으로 국가 추천을 받습니다. 회원과 동일한 추천 알고리즘을 사용하지만 데이터베이스에 저장하지 않으며 시뮬레이션 기능은 제공하지 않습니다.",
+          "비회원이 언어, 직무, 삶의 질 가중치, 전체 추천 가중치를 입력하여 API 기반으로 국가 추천을 받습니다. 회원과 동일한 추천 알고리즘을 사용하지만 데이터베이스에 저장하지 않으며 시뮬레이션 기능은 제공하지 않습니다.",
         tags: ["Guest"],
         requestBody: {
           required: true,
@@ -29,71 +29,111 @@ export const guestSwaggerDocs = {
                     description: "사용 가능한 언어 (단일 선택)",
                     example: "Korean",
                   },
-                  expectedSalary: {
-                    type: "number",
-                    description: "희망 연봉 (USD)",
-                    minimum: 10000,
-                    maximum: 500000,
-                    example: 50000,
+                  desiredJob: {
+                    type: "string",
+                    enum: [
+                      "0",
+                      "1",
+                      "2",
+                      "3",
+                      "4",
+                      "5",
+                      "6",
+                      "7",
+                      "8",
+                      "9",
+                      "10",
+                    ],
+                    description: "ISCO-08 대분류 코드",
+                    example: "2",
                   },
-                  jobField: {
+                  qualityOfLifeWeights: {
                     type: "object",
+                    description:
+                      "OECD Better Life Index 5가지 지표별 가중치 (합계 100)",
                     properties: {
-                      code: {
-                        type: "string",
-                        enum: [
-                          "0",
-                          "1",
-                          "2",
-                          "3",
-                          "4",
-                          "5",
-                          "6",
-                          "7",
-                          "8",
-                          "9",
-                        ],
-                        description: "ISCO-08 대분류 코드",
-                        example: "2",
+                      income: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 25,
+                        description: "소득 가중치",
                       },
-                      nameKo: {
-                        type: "string",
-                        description: "한국어 직무명",
-                        example: "전문가",
+                      jobs: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 20,
+                        description: "일자리 가중치",
+                      },
+                      health: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 30,
+                        description: "건강 가중치",
+                      },
+                      lifeSatisfaction: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 15,
+                        description: "삶의 만족도 가중치",
+                      },
+                      safety: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 10,
+                        description: "안전 가중치",
                       },
                     },
-                    required: ["code", "nameKo"],
+                    required: [
+                      "income",
+                      "jobs",
+                      "health",
+                      "lifeSatisfaction",
+                      "safety",
+                    ],
                   },
-                  priorities: {
+                  weights: {
                     type: "object",
+                    description: "전체 추천 카테고리별 가중치 (합계 100)",
                     properties: {
-                      first: {
-                        type: "string",
-                        enum: ["language", "salary", "job"],
-                        description: "1순위 우선사항 (가중치 0.5)",
-                        example: "salary",
+                      languageWeight: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 30,
+                        description: "언어 카테고리 가중치",
                       },
-                      second: {
-                        type: "string",
-                        enum: ["language", "salary", "job"],
-                        description: "2순위 우선사항 (가중치 0.3)",
-                        example: "language",
+                      jobWeight: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 30,
+                        description: "직무 카테고리 가중치",
                       },
-                      third: {
-                        type: "string",
-                        enum: ["language", "salary", "job"],
-                        description: "3순위 우선사항 (가중치 0.2)",
-                        example: "job",
+                      qualityOfLifeWeight: {
+                        type: "number",
+                        minimum: 0,
+                        maximum: 100,
+                        example: 40,
+                        description: "삶의 질 카테고리 가중치",
                       },
                     },
-                    required: ["first", "second", "third"],
+                    required: [
+                      "languageWeight",
+                      "jobWeight",
+                      "qualityOfLifeWeight",
+                    ],
                   },
                 },
                 required: [
                   "language",
-                  "expectedSalary",
-                  "jobField",
-                  "priorities",
+                  "desiredJob",
+                  "qualityOfLifeWeights",
+                  "weights",
                 ],
               },
             },
@@ -121,6 +161,40 @@ export const guestSwaggerDocs = {
                         userProfile: {
                           type: "object",
                           description: "입력한 사용자 프로필",
+                          properties: {
+                            language: {
+                              type: "string",
+                              example: "Korean",
+                            },
+                            desiredJob: {
+                              type: "string",
+                              example: "2",
+                            },
+                            qualityOfLifeWeights: {
+                              type: "object",
+                              properties: {
+                                income: { type: "number", example: 25 },
+                                jobs: { type: "number", example: 20 },
+                                health: { type: "number", example: 30 },
+                                lifeSatisfaction: {
+                                  type: "number",
+                                  example: 15,
+                                },
+                                safety: { type: "number", example: 10 },
+                              },
+                            },
+                            weights: {
+                              type: "object",
+                              properties: {
+                                languageWeight: { type: "number", example: 30 },
+                                jobWeight: { type: "number", example: 30 },
+                                qualityOfLifeWeight: {
+                                  type: "number",
+                                  example: 40,
+                                },
+                              },
+                            },
+                          },
                         },
                         recommendations: {
                           type: "array",
@@ -155,17 +229,17 @@ export const guestSwaggerDocs = {
                         appliedWeights: {
                           type: "object",
                           properties: {
-                            first: {
+                            languageWeight: {
                               type: "number",
-                              example: 0.5,
+                              example: 30,
                             },
-                            second: {
+                            jobWeight: {
                               type: "number",
-                              example: 0.3,
+                              example: 30,
                             },
-                            third: {
+                            qualityOfLifeWeight: {
                               type: "number",
-                              example: 0.2,
+                              example: 40,
                             },
                           },
                         },
@@ -199,7 +273,7 @@ export const guestSwaggerDocs = {
                     },
                     message: {
                       type: "string",
-                      example: "사용 가능한 언어를 1개 이상 입력해주세요.",
+                      example: "삶의 질 지표별 가중치의 합이 100이어야 합니다.",
                     },
                   },
                 },

@@ -30,7 +30,6 @@ const formatRecommendationResult = (recObj: any) => {
       desiredJob: profile.desiredJob || null,
       qualityOfLifeWeights: profile.qualityOfLifeWeights || null,
       weights: profile.weights || null,
-      additionalNotes: profile.additionalNotes || null,
     },
     recommendations: recObj.recommendations.map((country: any) => ({
       country: country.country,
@@ -156,12 +155,9 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 
 // 사용자 이력 조회 API
 export const getProfile = async (req: AuthRequest, res: Response) => {
-  const profiles = await UserProfile.find({ user: req.user!._id }).populate(
-    "user",
-    "name email"
-  );
+  const profiles = await UserProfile.find({ user: req.user!._id });
 
-  if (!profiles) {
+  if (!profiles || profiles.length === 0) {
     return res
       .status(404)
       .json({ code: 404, message: "이력 정보가 없습니다.", data: null });
@@ -169,20 +165,25 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   // 각 이력 정보를 포맷팅
   const formattedProfiles = profiles.map((profile) => {
     const profileObj = profile.toObject();
-    const user = profileObj.user as any; // populate된 user 데이터
 
     return {
       profileId: profileObj._id,
-      user: {
-        userId: user?._id || null,
-        name: user?.name || null,
-        email: user?.email || null,
-      },
-      languages: profileObj.language,
+      language: profileObj.language,
       desiredJob: profileObj.desiredJob,
-      qualityOfLifeWeights: profileObj.qualityOfLifeWeights,
-      weights: profileObj.weights,
-      additionalNotes: profileObj.additionalNotes,
+      qualityOfLifeWeights: {
+        income: profileObj.qualityOfLifeWeights?.income || 0,
+        jobs: profileObj.qualityOfLifeWeights?.jobs || 0,
+        health: profileObj.qualityOfLifeWeights?.health || 0,
+        lifeSatisfaction:
+          profileObj.qualityOfLifeWeights?.lifeSatisfaction || 0,
+        safety: profileObj.qualityOfLifeWeights?.safety || 0,
+      },
+      weights: {
+        languageWeight: profileObj.weights?.languageWeight || 0,
+        jobWeight: profileObj.weights?.jobWeight || 0,
+        qualityOfLifeWeight: profileObj.weights?.qualityOfLifeWeight || 0,
+      },
+      createdAt: profileObj.createdAt,
     };
   });
 
@@ -210,7 +211,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     "desiredJob",
     "qualityOfLifeWeights",
     "weights",
-    "additionalNotes",
   ];
 
   fields.forEach((field) => {
@@ -226,7 +226,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     desiredJob: profileObj.desiredJob,
     qualityOfLifeWeights: profileObj.qualityOfLifeWeights,
     weights: profileObj.weights,
-    additionalNotes: profileObj.additionalNotes,
   };
 
   res.status(200).json({
@@ -307,10 +306,7 @@ export const getUserRecommendations = async (
     const recommendations = await CountryRecommendationResult.find({
       user: req.user!._id,
     })
-      .populate(
-        "profile",
-        "language desiredJob qualityOfLifeWeights weights additionalNotes"
-      )
+      .populate("profile", "language desiredJob qualityOfLifeWeights weights")
       .sort({ createdAt: -1 });
 
     if (!recommendations || recommendations.length === 0) {
@@ -352,10 +348,7 @@ export const getRecommendationsByProfileId = async (
       user: req.user!._id,
       profile: profileId,
     })
-      .populate(
-        "profile",
-        "language desiredJob qualityOfLifeWeights weights additionalNotes"
-      )
+      .populate("profile", "language desiredJob qualityOfLifeWeights weights")
       .sort({ createdAt: -1 });
 
     if (!recommendations || recommendations.length === 0) {

@@ -13,49 +13,79 @@ import { SUPPORTED_LANGUAGES, JOB_FIELDS } from "../constants/dropdownOptions";
 // 비회원 국가 추천 요청 처리 (회원과 동일한 로직, DB 저장 없음)
 export const getGuestCountryRecommendations = asyncHandler(
   async (req: Request, res: Response) => {
-    const { userProfile, weights } = req.body;
+    const { language, desiredJob, qualityOfLifeWeights, weights } = req.body;
 
-    // 가중치 필수 검증
-    if (
-      !weights ||
-      weights.language === undefined ||
-      weights.job === undefined ||
-      weights.qualityOfLife === undefined
-    ) {
+    // OECD Better Life Index 가중치 검증
+    if (!qualityOfLifeWeights) {
       return res.status(400).json({
         success: false,
-        message:
-          "가중치 정보가 필요합니다. language, job, qualityOfLife 가중치를 모두 입력해주세요.",
+        message: "삶의 질 지표별 가중치가 필요합니다.",
         data: {
-          required: {
-            language: "언어 가중치 (숫자)",
-            job: "직무 가중치 (숫자)",
-            qualityOfLife: "삶의 질 가중치 (숫자)",
-          },
-          received: weights,
+          required: ["income", "jobs", "health", "lifeSatisfaction", "safety"],
         },
       });
     }
 
-    const finalWeights = {
-      language: weights.language,
-      job: weights.job,
-      qualityOfLife: weights.qualityOfLife,
+    // 사용자가 입력한 가중치를 그대로 사용
+    const finalQualityWeights = {
+      income: qualityOfLifeWeights.income ?? 0,
+      jobs: qualityOfLifeWeights.jobs ?? 0,
+      health: qualityOfLifeWeights.health ?? 0,
+      lifeSatisfaction: qualityOfLifeWeights.lifeSatisfaction ?? 0,
+      safety: qualityOfLifeWeights.safety ?? 0,
     };
 
-    // 가중치 검증
+    // 삶의 질 가중치 검증 (합계 100)
+    const qualityTotal = Object.values(finalQualityWeights).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+    if (qualityTotal !== 100) {
+      return res.status(400).json({
+        success: false,
+        message: "삶의 질 지표별 가중치의 합이 100이어야 합니다.",
+        data: {
+          currentTotal: qualityTotal,
+          weights: finalQualityWeights,
+        },
+      });
+    }
+
+    // 전체 추천 가중치 기본값 설정 및 검증
+    const finalWeights = {
+      languageWeight: weights?.languageWeight || 30,
+      jobWeight: weights?.jobWeight || 30,
+      qualityOfLifeWeight: weights?.qualityOfLifeWeight || 40,
+    };
+
+    // 전체 가중치 검증
     const totalWeight =
-      finalWeights.language + finalWeights.job + finalWeights.qualityOfLife;
+      finalWeights.languageWeight +
+      finalWeights.jobWeight +
+      finalWeights.qualityOfLifeWeight;
     if (totalWeight !== 100) {
       return res.status(400).json({
         success: false,
-        message: "가중치의 합이 100이어야 합니다.",
+        message: "전체 추천 가중치의 합이 100이어야 합니다.",
         data: {
           currentTotal: totalWeight,
           weights: finalWeights,
         },
       });
     }
+
+    // UserCareerProfile 형태로 변환
+    const userProfile: UserCareerProfile = {
+      language,
+      jobField: {
+        code: desiredJob,
+        nameKo:
+          JOB_FIELDS.find((field) => field.code === desiredJob)?.nameKo || "",
+        nameEn:
+          JOB_FIELDS.find((field) => field.code === desiredJob)?.nameEn || "",
+      },
+      qualityOfLifeWeights: finalQualityWeights,
+    };
 
     // 입력 데이터 검증
     const validationError = validateGuestProfile(userProfile);
@@ -75,7 +105,11 @@ export const getGuestCountryRecommendations = asyncHandler(
 
     try {
       // 가중치를 서비스에서 사용할 수 있도록 저장
-      saveWeights(finalWeights);
+      saveWeights({
+        language: finalWeights.languageWeight,
+        job: finalWeights.jobWeight,
+        qualityOfLife: finalWeights.qualityOfLifeWeight,
+      });
 
       // 국가 추천 서비스 호출 (회원과 동일한 로직)
       const recommendations: CountryRecommendation[] =
@@ -89,8 +123,9 @@ export const getGuestCountryRecommendations = asyncHandler(
         data: {
           userProfile: {
             language: userProfile.language,
-            jobField: userProfile.jobField,
+            desiredJob,
             qualityOfLifeWeights: userProfile.qualityOfLifeWeights,
+            weights: finalWeights,
           },
           recommendations,
           appliedWeights: finalWeights,
@@ -117,6 +152,11 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
     return "사용 가능한 언어를 선택해주세요.";
   }
 
+  // 언어 검증
+  if (!SUPPORTED_LANGUAGES.includes(profile.language as any)) {
+    return "지원되는 언어를 선택해주세요.";
+  }
+
   if (!profile.jobField || !profile.jobField.code || !profile.jobField.nameKo) {
     return "직무 분야를 올바르게 선택해주세요.";
   }
@@ -130,23 +170,6 @@ function validateGuestProfile(profile: UserCareerProfile): string | null {
   // 삶의 질 가중치 검증
   if (!profile.qualityOfLifeWeights) {
     return "삶의 질 가중치를 설정해주세요.";
-  }
-
-  const qolWeights = profile.qualityOfLifeWeights;
-  const qolTotal =
-    qolWeights.income +
-    qolWeights.jobs +
-    qolWeights.health +
-    qolWeights.lifeSatisfaction +
-    qolWeights.safety;
-
-  if (qolTotal !== 100) {
-    return "삶의 질 지표별 가중치의 합이 100이어야 합니다.";
-  }
-
-  // 언어 검증
-  if (!SUPPORTED_LANGUAGES.includes(profile.language as any)) {
-    return "지원되는 언어를 선택해주세요.";
   }
 
   return null; // 검증 통과

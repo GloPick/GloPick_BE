@@ -171,10 +171,6 @@ export const profileSwaggerDocs = {
                     description: "직무 가중치 (10 단위)",
                     example: 30,
                   },
-                  additionalNotes: {
-                    type: "string",
-                    example: "원격 근무 원함",
-                  },
                 },
                 required: [
                   "language",

@@ -6,16 +6,14 @@ import {
   getSimulationsByProfileId,
   getUserRecommendations,
   getRecommendationsByProfileId,
-} from "../controllers/mypageController";
-import {
   getProfile,
   updateProfile,
   deleteProfile,
-  getUserSimulationInputs,
+  getUserSimulations,
 } from "../controllers/mypageController";
 import { protect } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../utils/asyncHandler";
-import { getUserSimulations } from "../controllers/mypageController";
+import { getSimulationList } from "../controllers/simulationController";
 
 const router = express.Router();
 
@@ -37,13 +35,7 @@ router.put("/profiles/:id", protect, asyncHandler(updateProfile));
 // 사용자 이력 삭제 (DELETE /api/profile/:id)
 router.delete("/profiles/:id", protect, asyncHandler(deleteProfile));
 
-// 시뮬레이션 전 추가 정보 조회
-router.get(
-  "/simulations/inputs",
-  protect,
-  asyncHandler(getUserSimulationInputs)
-);
-// 시뮬레이션 결과 조회
+// 시뮬레이션 결과 조회 (입력 정보 포함)
 router.get("/simulations", protect, asyncHandler(getUserSimulations));
 
 // 특정 이력별 시뮬레이션 결과 조회 API
@@ -62,5 +54,8 @@ router.get(
   protect,
   asyncHandler(getRecommendationsByProfileId)
 );
+
+// 시뮬레이션 요약 리스트 조회 API
+router.get("/simulations/list", protect, asyncHandler(getSimulationList));
 
 export default router;

@@ -23,11 +23,11 @@ router.post(
   asyncHandler(recommendCities)
 );
 
-// 2. 시뮬레이션 추가 정보 입력 (도시 선택 후)
+// 2. 시뮬레이션 추가 정보 입력 + 시뮬레이션 자동 생성 (통합됨)
 router.post("/input/:id", protect, asyncHandler(saveSimulationInput));
 
-// 3. GPT 기반 시뮬레이션 생성
-router.post("/:id/generate", protect, asyncHandler(generateAndSaveSimulation));
+// 3. [Deprecated] GPT 기반 시뮬레이션 생성 - 이제 /input/{id}에서 자동으로 처리됨
+// router.post("/:id/generate", protect, asyncHandler(generateAndSaveSimulation));
 
 // 항공권 링크 포함 시뮬레이션 결과 조회
 router.get(
@@ -35,8 +35,5 @@ router.get(
   protect,
   asyncHandler(getSimulationFlightLinks)
 );
-
-// 시뮬레이션 요약 리스트 조회
-router.get("/list", protect, asyncHandler(getSimulationList));
 
 export default router;

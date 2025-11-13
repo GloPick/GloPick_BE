@@ -326,7 +326,9 @@ export const simulationSwaggerDocs = {
     },
     "/api/simulation/input/{id}": {
       post: {
-        summary: "시뮬레이션 추가 정보 입력 및 저장",
+        summary: "시뮬레이션 추가 정보 입력 및 즉시 생성",
+        description:
+          "도시를 선택하고 추가 정보를 입력하면 자동으로 GPT 기반 시뮬레이션이 생성되어 저장됩니다. 별도의 생성 단계 없이 한 번에 처리됩니다.",
         tags: ["Simulation"],
         security: [{ bearerAuth: [] }],
         parameters: [
@@ -433,7 +435,7 @@ export const simulationSwaggerDocs = {
         },
         responses: {
           201: {
-            description: "시뮬레이션 입력 정보 저장 성공",
+            description: "시뮬레이션 입력 및 생성 완료",
             content: {
               "application/json": {
                 schema: {
@@ -442,7 +444,7 @@ export const simulationSwaggerDocs = {
                     code: { type: "integer", example: 201 },
                     message: {
                       type: "string",
-                      example: "시뮬레이션 입력 정보 저장 성공",
+                      example: "시뮬레이션 입력 및 생성 완료",
                     },
                     data: {
                       type: "object",
@@ -456,132 +458,11 @@ export const simulationSwaggerDocs = {
                           type: "string",
                           example: "64f1234567890abcdef12346",
                         },
-                        selectedCountry: { type: "string", example: "Canada" },
-                        selectedCity: { type: "string", example: "Vancouver" },
-                        initialBudget: {
+                        simulationId: {
                           type: "string",
-                          example: "500만~800만원",
+                          example: "64f1234567890abcdef12347",
+                          description: "생성된 시뮬레이션 ID",
                         },
-                        requiredFacilities: {
-                          type: "array",
-                          items: { type: "string" },
-                          example: [
-                            "hospital",
-                            "subway_station",
-                            "supermarket",
-                          ],
-                        },
-                        departureAirport: {
-                          type: "string",
-                          example: "인천국제공항",
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          400: { description: "잘못된 요청 데이터" },
-          404: { description: "입력 정보를 찾을 수 없음" },
-          409: {
-            description:
-              "중복된 입력 정보 (이미 동일한 조건으로 저장되어 있습니다)",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    code: { type: "integer", example: 409 },
-                    message: {
-                      type: "string",
-                      example:
-                        "이미 동일한 조건으로 입력 정보가 저장되어 있습니다.",
-                    },
-                    data: {
-                      type: "object",
-                      properties: {
-                        isExisting: {
-                          type: "boolean",
-                          example: true,
-                        },
-                        inputId: {
-                          type: "string",
-                          example: "64f1234567890abcdef12346",
-                          description: "기존 입력 정보 ID",
-                        },
-                        selectedCountry: {
-                          type: "string",
-                          example: "Canada",
-                        },
-                        selectedCity: {
-                          type: "string",
-                          example: "Vancouver",
-                        },
-                        initialBudget: {
-                          type: "string",
-                          example: "500만~800만원",
-                        },
-                        requiredFacilities: {
-                          type: "array",
-                          items: { type: "string" },
-                          example: [
-                            "hospital",
-                            "subway_station",
-                            "supermarket",
-                          ],
-                        },
-                        departureAirport: {
-                          type: "string",
-                          example: "인천국제공항",
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          500: { description: "서버 오류" },
-        },
-      },
-    },
-    "/api/simulation/{id}/generate": {
-      post: {
-        summary: "선택한 도시 기반 시뮬레이션 생성 및 저장",
-        description:
-          "이전 단계(/api/simulation/input/{id})에서 저장된 정보를 사용하여 GPT 기반 시뮬레이션을 생성합니다. Request body 없이 inputId만 전달하면 됩니다.",
-        tags: ["Simulation"],
-        security: [{ bearerAuth: [] }],
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description:
-              "SimulationInput ID (추가 정보 입력 단계에서 저장된 inputId)",
-          },
-        ],
-        responses: {
-          201: {
-            description: "시뮬레이션 생성 및 저장 완료",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    code: {
-                      type: "integer",
-                      example: 201,
-                    },
-                    message: {
-                      type: "string",
-                      example: "시뮬레이션 생성 및 저장 완료",
-                    },
-                    data: {
-                      type: "object",
-                      properties: {
                         result: {
                           type: "object",
                           properties: {
@@ -596,170 +477,42 @@ export const simulationSwaggerDocs = {
                                 essentialFacilities: {
                                   type: "array",
                                   items: { type: "string" },
-                                  example: [
-                                    "VGH (Vancouver General Hospital)",
-                                    "T&T Supermarket (한국 식재료)",
-                                    "SkyTrain 역",
-                                  ],
                                 },
-                                publicTransport: {
-                                  type: "string",
-                                  example:
-                                    "SkyTrain과 버스가 잘 연결되어 있어 대중교통 이용이 편리합니다.",
-                                },
-                                safetyLevel: {
-                                  type: "string",
-                                  example:
-                                    "캐나다는 안전한 국가로 유명하며, 밴쿠버도 비교적 안전합니다.",
-                                },
-                                climateSummary: {
-                                  type: "string",
-                                  example:
-                                    "온화한 해양성 기후로 겨울에도 영하로 잘 내려가지 않습니다.",
-                                },
-                                koreanCommunity: {
-                                  type: "string",
-                                  example:
-                                    "한인타운이 발달되어 있어 한국 음식과 서비스를 쉽게 이용할 수 있습니다.",
-                                },
-                                culturalTips: {
-                                  type: "string",
-                                  example:
-                                    "다문화를 존중하는 문화가 잘 정착되어 있습니다.",
-                                },
-                                warnings: {
-                                  type: "string",
-                                  example:
-                                    "집값이 비싸므로 예산을 충분히 준비하세요.",
-                                },
+                                publicTransport: { type: "string" },
+                                safetyLevel: { type: "string" },
+                                climateSummary: { type: "string" },
+                                koreanCommunity: { type: "string" },
+                                culturalTips: { type: "string" },
+                                warnings: { type: "string" },
                               },
                             },
                             estimatedMonthlyCost: {
                               type: "object",
                               properties: {
-                                housing: { type: "string", example: "150만원" },
-                                food: { type: "string", example: "60만원" },
-                                transportation: {
-                                  type: "string",
-                                  example: "15만원",
-                                },
-                                etc: { type: "string", example: "40만원" },
-                                total: { type: "string", example: "265만원" },
-                                oneYearCost: {
-                                  type: "string",
-                                  example: "3180만원",
-                                },
-                                costCuttingTips: {
-                                  type: "string",
-                                  example:
-                                    "룸메이트와 함께 거주하거나 외곽 지역을 고려해보세요.",
-                                },
-                                cpi: {
-                                  type: "string",
-                                  example:
-                                    "한국 대비 약 1.3배 정도 물가가 높습니다.",
-                                },
+                                housing: { type: "string" },
+                                food: { type: "string" },
+                                transportation: { type: "string" },
+                                etc: { type: "string" },
+                                total: { type: "string" },
+                                oneYearCost: { type: "string" },
+                                costCuttingTips: { type: "string" },
+                                cpi: { type: "string" },
                               },
                             },
-                            initialSetup: {
+                            initialSetup: { type: "object" },
+                            jobReality: { type: "object" },
+                            culturalIntegration: { type: "object" },
+                            facilityLocations: {
                               type: "object",
-                              properties: {
-                                shortTermHousingOptions: {
-                                  type: "array",
-                                  items: { type: "string" },
-                                  example: [
-                                    "호스텔",
-                                    "에어비앤비",
-                                    "단기 렌탈",
-                                  ],
-                                },
-                                longTermHousingPlatforms: {
-                                  type: "array",
-                                  items: { type: "string" },
-                                  example: [
-                                    "Craigslist",
-                                    "PadMapper",
-                                    "Kijiji",
-                                  ],
-                                },
-                                mobilePlan: {
-                                  type: "string",
-                                  example:
-                                    "Fido, Rogers 등에서 선불 또는 후불 요금제 선택 가능",
-                                },
-                                bankAccount: {
-                                  type: "string",
-                                  example:
-                                    "TD Bank, RBC 등에서 신분증으로 계좌 개설 가능",
-                                },
-                              },
-                            },
-                            jobReality: {
-                              type: "object",
-                              properties: {
-                                commonJobs: {
-                                  type: "array",
-                                  items: { type: "string" },
-                                  example: [
-                                    "IT 개발자",
-                                    "마케팅 전문가",
-                                    "서비스업",
-                                    "한국어 강사",
-                                  ],
-                                },
-                                jobSearchPlatforms: {
-                                  type: "array",
-                                  items: { type: "string" },
-                                  example: ["Indeed", "LinkedIn", "Workopolis"],
-                                },
-                                languageRequirement: {
-                                  type: "string",
-                                  example:
-                                    "영어 중급 이상 필수, 불어 가능하면 더 유리",
-                                },
-                                visaLimitationTips: {
-                                  type: "string",
-                                  example: "워킹홀리데이 비자나 취업 비자 필요",
-                                },
-                              },
-                            },
-                            culturalIntegration: {
-                              type: "object",
-                              properties: {
-                                koreanPopulationRate: {
-                                  type: "string",
-                                  example:
-                                    "전체 인구의 약 2% 정도로 한국인 커뮤니티가 활발합니다.",
-                                },
-                                foreignResidentRatio: {
-                                  type: "string",
-                                  example: "45%",
-                                },
-                                koreanResourcesLinks: {
-                                  type: "array",
-                                  items: { type: "string" },
-                                  example: [
-                                    "https://www.vankoreancommunity.com",
-                                    "https://www.facebook.com/groups/vancouver.korean",
-                                  ],
-                                },
-                              },
+                              description: "Google Maps로 조회한 편의시설 위치",
                             },
                           },
                         },
                         flightLinks: {
                           type: "object",
                           properties: {
-                            googleFlights: {
-                              type: "string",
-                              example:
-                                "https://www.google.com/travel/flights?q=Flights from ICN to YVR/one way",
-                            },
-                            skyscanner: {
-                              type: "string",
-                              example:
-                                "https://www.skyscanner.co.kr/transport/flights/icn/yvr/",
-                            },
+                            googleFlights: { type: "string" },
+                            skyscanner: { type: "string" },
                           },
                         },
                       },
@@ -769,60 +522,28 @@ export const simulationSwaggerDocs = {
               },
             },
           },
-          400: { description: "필수 정보 누락" },
-          404: { description: "입력 정보 없음" },
-          500: { description: "GPT 호출 또는 저장 실패" },
-        },
-      },
-    },
-
-    "/api/simulation/list": {
-      get: {
-        summary: "시뮬레이션 요약 리스트 조회",
-        tags: ["Simulation"],
-        security: [{ bearerAuth: [] }],
-        responses: {
           200: {
-            description: "시뮬레이션 요약 리스트 조회 성공",
+            description:
+              "이미 동일한 조건으로 생성된 시뮬레이션이 있음 (기존 결과 반환)",
             content: {
               "application/json": {
                 schema: {
                   type: "object",
                   properties: {
-                    code: {
-                      type: "integer",
-                      example: 200,
-                    },
+                    code: { type: "integer", example: 200 },
                     message: {
                       type: "string",
-                      example: "시뮬레이션 요약 리스트 조회 성공",
+                      example:
+                        "이미 동일한 조건으로 시뮬레이션이 생성되어 있습니다.",
                     },
                     data: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          simulationId: {
-                            type: "string",
-                            example: "663fe59a5230fdd9c41a67af",
-                          },
-                          country: {
-                            type: "string",
-                            example: "캐나다",
-                          },
-                          city: {
-                            type: "string",
-                            example: "밴쿠버",
-                          },
-                          initialBudget: {
-                            type: "string",
-                            example: "500만~800만원",
-                          },
-                          createdAt: {
-                            type: "string",
-                            example: "2024-01-01T00:00:00.000Z",
-                          },
-                        },
+                      type: "object",
+                      properties: {
+                        isExisting: { type: "boolean", example: true },
+                        inputId: { type: "string" },
+                        simulationId: { type: "string" },
+                        result: { type: "object" },
+                        flightLinks: { type: "object" },
                       },
                     },
                   },
@@ -830,12 +551,9 @@ export const simulationSwaggerDocs = {
               },
             },
           },
-          401: {
-            description: "인증 실패 (토큰 없음 또는 만료)",
-          },
-          500: {
-            description: "서버 오류",
-          },
+          400: { description: "잘못된 요청 데이터" },
+          404: { description: "입력 정보를 찾을 수 없음" },
+          500: { description: "시뮬레이션 생성 실패" },
         },
       },
     },

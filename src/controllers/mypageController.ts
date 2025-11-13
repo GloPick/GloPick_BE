@@ -263,11 +263,11 @@ export const deleteProfile = async (req: AuthRequest, res: Response) => {
   });
 };
 
-// 시뮬레이션 결과 조회 API
+// 시뮬레이션 결과 조회 API (입력 정보 포함)
 export const getUserSimulations = async (req: AuthRequest, res: Response) => {
   try {
     const simulations = await SimulationResult.find({ user: req.user!._id })
-      .select("result country createdAt")
+      .populate("input")
       .sort({ createdAt: -1 });
 
     if (!simulations || simulations.length === 0) {
@@ -278,9 +278,37 @@ export const getUserSimulations = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const formattedSimulations = simulations.map((sim) =>
-      formatSimulationResult(sim.toObject())
-    );
+    const formattedSimulations = simulations.map((sim) => {
+      const simObj = sim.toObject() as any;
+      const inputObj = simObj.input as any;
+      const result = (simObj.result || {}) as any;
+
+      return {
+        _id: simObj._id,
+        // 입력 정보
+        input: {
+          inputId: inputObj?._id || null,
+          selectedCountry: inputObj?.selectedCountry || null,
+          selectedCity: inputObj?.selectedCity || null,
+          initialBudget: inputObj?.initialBudget || null,
+          requiredFacilities: inputObj?.requiredFacilities || [],
+          departureAirport: inputObj?.departureAirport || null,
+          recommendedCities: inputObj?.recommendedCities || [],
+        },
+        // 시뮬레이션 결과
+        country: simObj.country,
+        result: {
+          recommendedCity: result.recommendedCity || null,
+          localInfo: result.localInfo || {},
+          estimatedMonthlyCost: result.estimatedMonthlyCost || {},
+          initialSetup: result.initialSetup || {},
+          jobReality: result.jobReality || {},
+          culturalIntegration: result.culturalIntegration || {},
+          facilityLocations: result.facilityLocations || {},
+        },
+        createdAt: simObj.createdAt,
+      };
+    });
 
     res.status(200).json({
       code: 200,
@@ -378,54 +406,7 @@ export const getRecommendationsByProfileId = async (
   }
 };
 
-// 시뮬레이션 전 추가 정보 조회 API
-export const getUserSimulationInputs = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const inputs = await SimulationInput.find({ user: req.user!._id }).sort({
-      createdAt: -1,
-    });
-
-    if (!inputs || inputs.length === 0) {
-      return res.status(404).json({
-        code: 404,
-        message: "입력한 시뮬레이션 조건이 없습니다.",
-        data: null,
-      });
-    }
-
-    const formatted = inputs.map((input) => {
-      const obj = input.toObject();
-
-      return {
-        inputId: obj._id,
-        selectedCountry: obj.selectedCountry,
-        initialBudget: obj.initialBudget,
-        requiredFacilities: obj.requiredFacilities,
-        departureAirport: obj.departureAirport,
-        recommendedCities: obj.recommendedCities,
-        selectedCity: obj.selectedCity,
-      };
-    });
-
-    res.status(200).json({
-      code: 200,
-      message: "입력 조건 조회 성공",
-      data: formatted,
-    });
-  } catch (error) {
-    console.error("입력 조건 조회 실패:", error);
-    res.status(500).json({
-      code: 500,
-      message: "서버 오류",
-      data: null,
-    });
-  }
-};
-
-// 특정 이력별 시뮬레이션 결과 조회 API
+// 특정 이력별 시뮬레이션 결과 조회 API (입력 정보 포함)
 export const getSimulationsByProfileId = async (
   req: AuthRequest,
   res: Response
@@ -443,7 +424,9 @@ export const getSimulationsByProfileId = async (
     const simulations = await SimulationResult.find({
       user: req.user!._id,
       input: { $in: inputIds },
-    }).sort({ createdAt: -1 });
+    })
+      .populate("input")
+      .sort({ createdAt: -1 });
 
     if (!simulations || simulations.length === 0) {
       return res.status(404).json({
@@ -453,9 +436,37 @@ export const getSimulationsByProfileId = async (
       });
     }
 
-    const formatted = simulations.map((sim) =>
-      formatSimulationResult(sim.toObject())
-    );
+    const formatted = simulations.map((sim) => {
+      const simObj = sim.toObject() as any;
+      const inputObj = simObj.input as any;
+      const result = (simObj.result || {}) as any;
+
+      return {
+        _id: simObj._id,
+        // 입력 정보
+        input: {
+          inputId: inputObj?._id || null,
+          selectedCountry: inputObj?.selectedCountry || null,
+          selectedCity: inputObj?.selectedCity || null,
+          initialBudget: inputObj?.initialBudget || null,
+          requiredFacilities: inputObj?.requiredFacilities || [],
+          departureAirport: inputObj?.departureAirport || null,
+          recommendedCities: inputObj?.recommendedCities || [],
+        },
+        // 시뮬레이션 결과
+        country: simObj.country,
+        result: {
+          recommendedCity: result.recommendedCity || null,
+          localInfo: result.localInfo || {},
+          estimatedMonthlyCost: result.estimatedMonthlyCost || {},
+          initialSetup: result.initialSetup || {},
+          jobReality: result.jobReality || {},
+          culturalIntegration: result.culturalIntegration || {},
+          facilityLocations: result.facilityLocations || {},
+        },
+        createdAt: simObj.createdAt,
+      };
+    });
 
     res.status(200).json({
       code: 200,

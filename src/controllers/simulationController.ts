@@ -95,7 +95,7 @@ const validateSimulationInput = (
   return { isValid: true };
 };
 
-// 시뮬레이션 추가 정보 입력 및 저장 (도시 선택 후)
+// 시뮬레이션 추가 정보 입력 및 시뮬레이션 생성 (통합)
 export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params; // inputId를 parameter로 받음
@@ -177,19 +177,33 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
     });
 
     if (existingInput) {
-      return res.status(409).json({
-        code: 409,
-        message: "이미 동일한 조건으로 입력 정보가 저장되어 있습니다.",
-        data: {
-          isExisting: true,
-          inputId: existingInput._id,
-          selectedCountry: existingInput.selectedCountry,
-          selectedCity: existingInput.selectedCity,
-          initialBudget: existingInput.initialBudget,
-          requiredFacilities: existingInput.requiredFacilities,
-          departureAirport: existingInput.departureAirport,
-        },
+      // 기존 입력이 있으면 해당 시뮬레이션 결과도 함께 반환
+      const existingSimulation = await SimulationResult.findOne({
+        input: existingInput._id,
+        user: req.user!._id,
       });
+
+      if (existingSimulation) {
+        const flightLinks = createFlightLinks(
+          existingInput.departureAirport as string,
+          existingInput.selectedCity as string
+        );
+
+        return res.status(200).json({
+          code: 200,
+          message: "이미 동일한 조건으로 시뮬레이션이 생성되어 있습니다.",
+          data: {
+            isExisting: true,
+            inputId: existingInput._id,
+            simulationId: existingSimulation._id,
+            result: {
+              country: existingSimulation.country,
+              ...existingSimulation.result,
+            },
+            flightLinks,
+          },
+        });
+      }
     }
 
     // 추가 정보 업데이트
@@ -200,22 +214,102 @@ export const saveSimulationInput = async (req: AuthRequest, res: Response) => {
 
     await input.save();
 
+    // === 바로 시뮬레이션 생성 시작 ===
+    console.log("🚀 시뮬레이션 생성 시작...");
+
+    const gptResult = await generateSimulationResponse(input);
+    const arrivalAirportCode =
+      gptResult?.nearestAirport?.code || actualSelectedCity;
+
+    const flightLinks = createFlightLinks(
+      input.departureAirport as string,
+      arrivalAirportCode as string
+    );
+
+    // Google Maps API로 편의시설 위치 정보 조회
+    let facilityLocations = {};
+    if (input.requiredFacilities && input.requiredFacilities.length > 0) {
+      try {
+        facilityLocations = await searchFacilities(
+          actualSelectedCity,
+          input.selectedCountry,
+          input.requiredFacilities
+        );
+        const foundCount = Object.keys(facilityLocations).length;
+        console.log(
+          `✅ Google Maps API: ${actualSelectedCity}의 편의시설 위치 조회 완료 (${foundCount}/${input.requiredFacilities.length}개 발견)`
+        );
+      } catch (error) {
+        console.error("Google Maps API 호출 실패:", error);
+        // API 실패 시에도 시뮬레이션은 계속 진행
+      }
+    }
+
+    const { ...restResult } = gptResult;
+
+    const saved = await SimulationResult.create({
+      user: req.user!._id,
+      input: id,
+      country: input.selectedCountry,
+      result: {
+        ...restResult,
+        facilityLocations, // Google Maps 위치 정보 추가
+      },
+    });
+
+    // 사용자 프로필에서 직무 정보 가져오기 (ISCO 코드 사용)
+    const userProfile = await UserProfile.findOne({
+      _id: input.profile,
+      user: req.user!._id,
+    });
+
+    const jobCode = userProfile?.desiredJob || "2"; // 기본값: 전문가
+    const jobField =
+      JOB_FIELDS.find((field) => field.code === jobCode) || JOB_FIELDS[1];
+    const desiredJob = jobField.nameKo;
+
+    const isAlreadyExist = await SimulationList.findOne({
+      user: req.user!._id,
+      job: desiredJob,
+      country: input.selectedCountry,
+      city: actualSelectedCity,
+    });
+
+    if (!isAlreadyExist) {
+      await SimulationList.create({
+        user: req.user!._id,
+        job: desiredJob,
+        country: input.selectedCountry,
+        city: actualSelectedCity,
+      });
+    }
+
+    const simulationId = saved._id;
+    const savedObj = saved.toObject();
+
+    console.log("✅ 시뮬레이션 생성 및 저장 완료");
+
     res.status(201).json({
       code: 201,
-      message: "시뮬레이션 입력 정보 저장 성공",
+      message: "시뮬레이션 입력 및 생성 완료",
       data: {
         isExisting: false,
         inputId: input._id,
-        selectedCountry: input.selectedCountry,
-        selectedCity: input.selectedCity,
-        initialBudget: input.initialBudget,
-        requiredFacilities: input.requiredFacilities,
-        departureAirport: input.departureAirport,
+        simulationId,
+        result: {
+          country: savedObj.country,
+          ...savedObj.result,
+        },
+        flightLinks,
       },
     });
   } catch (error) {
-    console.error("시뮬레이션 입력 저장 실패:", error);
-    res.status(500).json({ code: 500, message: "저장 실패", data: null });
+    console.error("시뮬레이션 입력 및 생성 실패:", error);
+    res.status(500).json({
+      code: 500,
+      message: "시뮬레이션 생성 실패",
+      data: null,
+    });
   }
 };
 

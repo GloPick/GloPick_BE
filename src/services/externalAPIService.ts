@@ -25,6 +25,60 @@ export class ExternalAPIService {
   private static readonly ILOSTAT_API =
     "https://rplumber.ilo.org/data/indicator";
 
+  // OECD 회원국 코드 목록 (38개국 + 파트너 2개국)
+  private static readonly OECD_COUNTRY_CODES: Set<string> = new Set([
+    // OECD 38개 회원국
+    "AUS", // 호주
+    "AUT", // 오스트리아
+    "BEL", // 벨기에
+    "CAN", // 캐나다
+    "CHL", // 칠레
+    "COL", // 콜롬비아
+    "CRI", // 코스타리카
+    "CZE", // 체코
+    "DNK", // 덴마크
+    "EST", // 에스토니아
+    "FIN", // 핀란드
+    "FRA", // 프랑스
+    "DEU", // 독일
+    "GRC", // 그리스
+    "HUN", // 헝가리
+    "ISL", // 아이슬란드
+    "IRL", // 아일랜드
+    "ISR", // 이스라엘
+    "ITA", // 이탈리아
+    "JPN", // 일본
+    "KOR", // 한국
+    "LVA", // 라트비아
+    "LTU", // 리투아니아
+    "LUX", // 룩셈부르크
+    "MEX", // 멕시코
+    "NLD", // 네덜란드
+    "NZL", // 뉴질랜드
+    "NOR", // 노르웨이
+    "POL", // 폴란드
+    "PRT", // 포르투갈
+    "SVK", // 슬로바키아
+    "SVN", // 슬로베니아
+    "ESP", // 스페인
+    "SWE", // 스웨덴
+    "CHE", // 스위스
+    "TUR", // 터키
+    "GBR", // 영국
+    "USA", // 미국
+  ]);
+
+  // Mock 고용률 데이터 (ILOSTAT API에서 데이터가 없는 OECD 국가들만)
+  // 2023년 기준, 15-64세 고용률 %
+  private static readonly MOCK_EMPLOYMENT_RATES: Record<string, number> = {
+    CZE: 75.4, // 체코 (Czech Republic) - ILOSTAT 데이터 없음
+    KOR: 68.5, // 한국 (Korea) - ILOSTAT 데이터 없음
+    SVK: 69.8, // 슬로바키아 (Slovak Republic) - ILOSTAT 데이터 없음
+    TUR: 49.5, // 터키 (Turkey) - ILOSTAT 데이터 없음
+    GBR: 75.0, // 영국 (United Kingdom) - ILOSTAT 데이터 없음
+    USA: 70.6, // 미국 (United States) - ILOSTAT 데이터 없음
+  };
+
   // REST Countries API에서 기본 국가 정보 가져오기
   static async getCountriesBasicInfo(): Promise<CountryData[]> {
     try {
@@ -53,7 +107,7 @@ export class ExternalAPIService {
             country.name?.common &&
             country.cca3 &&
             country.region &&
-            country.population > 1000000 // 인구 100만 이상 국가만
+            this.OECD_COUNTRY_CODES.has(country.cca3) // OECD 국가만 필터링
         )
         .map((country: any) => ({
           name: country.name.common,
@@ -63,7 +117,7 @@ export class ExternalAPIService {
           population: country.population,
         }));
 
-      console.log(`필터링된 국가 수: ${filteredCountries.length}`);
+      console.log(`OECD 국가 수집: ${filteredCountries.length}개국`);
       console.log("✅ REST Countries API 데이터 수집 완료");
       return filteredCountries;
     } catch (error: any) {
@@ -416,11 +470,13 @@ export class ExternalAPIService {
   // 모든 외부 API 데이터를 한번에 수집
   static async getAllCountryData(): Promise<CountryData[]> {
     try {
-      console.log("국가 기본 정보 수집 중...");
+      console.log("🌍 OECD 국가 기본 정보 수집 중...");
       const countries = await this.getCountriesBasicInfo();
       const countryCodes = countries.map((c) => c.code);
 
-      console.log(`${countries.length}개 국가 데이터 수집 중...`);
+      console.log(
+        `📍 ${countries.length}개 OECD 국가에 대한 데이터 수집 중...`
+      );
 
       // 병렬로 외부 API 호출
       const [economicData, iscoEmploymentData, employmentData] =
@@ -430,13 +486,61 @@ export class ExternalAPIService {
           this.getEmploymentData(countryCodes),
         ]);
 
-      // 데이터 병합
-      return countries.map((country) => ({
-        ...country,
-        gdpPerCapita: economicData.get(country.code),
-        employmentRate: employmentData.get(country.code),
-        iscoEmploymentData: iscoEmploymentData.get(country.code) || new Map(),
-      }));
+      // 데이터 병합 - API 데이터가 없으면 mock 데이터 사용
+      const finalCountries = countries.map((country) => {
+        const apiEmploymentRate = employmentData.get(country.code);
+        const mockEmploymentRate = this.MOCK_EMPLOYMENT_RATES[country.code];
+
+        return {
+          ...country,
+          gdpPerCapita: economicData.get(country.code),
+          employmentRate:
+            apiEmploymentRate !== undefined
+              ? apiEmploymentRate
+              : mockEmploymentRate,
+          iscoEmploymentData: iscoEmploymentData.get(country.code) || new Map(),
+        };
+      });
+
+      // 데이터 누락 통계 로깅
+      const missingEmploymentRate = finalCountries.filter(
+        (c) => c.employmentRate === undefined
+      ).length;
+      const mockEmploymentCount = finalCountries.filter((c) => {
+        const apiData = employmentData.get(c.code);
+        const mockData = this.MOCK_EMPLOYMENT_RATES[c.code];
+        return apiData === undefined && mockData !== undefined;
+      }).length;
+      const missingGDP = finalCountries.filter(
+        (c) => c.gdpPerCapita === undefined
+      ).length;
+
+      console.log(`\n📊 OECD 국가 데이터 수집 통계:`);
+      console.log(`  - 총 OECD 국가 수: ${finalCountries.length}개국`);
+      console.log(`  - 고용률 API 데이터: ${employmentData.size}개국`);
+      console.log(`  - 고용률 Mock 데이터: ${mockEmploymentCount}개국`);
+      console.log(`  - 고용률 데이터 없음: ${missingEmploymentRate}개국`);
+      console.log(
+        `  - GDP 데이터 있음: ${finalCountries.length - missingGDP}개국`
+      );
+      console.log(`  - GDP 데이터 없음: ${missingGDP}개국\n`);
+
+      // 고용률 데이터가 완전히 없는 국가 목록 (최대 10개만 표시)
+      if (missingEmploymentRate > 0) {
+        const missingCountries = finalCountries
+          .filter((c) => c.employmentRate === undefined)
+          .slice(0, 10)
+          .map((c) => c.name);
+        console.log(
+          `⚠️  고용률 데이터 없는 국가 (일부): ${missingCountries.join(", ")}${
+            missingEmploymentRate > 10
+              ? ` 외 ${missingEmploymentRate - 10}개국`
+              : ""
+          }`
+        );
+      }
+
+      return finalCountries;
     } catch (error) {
       console.error("외부 API 데이터 수집 실패:", error);
       throw error;

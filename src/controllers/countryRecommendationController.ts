@@ -142,6 +142,7 @@ async function saveRecommendation(
             region: rec.country.region,
             languages: rec.country.languages,
             population: rec.country.population || 0,
+            employmentRate: rec.country.employmentRate || null, // 고용률 추가 (없으면 null)
           },
         };
       })

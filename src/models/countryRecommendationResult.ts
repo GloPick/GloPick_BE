@@ -29,6 +29,7 @@ const CountryRecommendationResultSchema = new mongoose.Schema(
           region: { type: String },
           languages: [{ type: String }],
           population: { type: Number },
+          employmentRate: { type: Number, default: null }, // 전체 고용률 추가
         },
       },
     ],

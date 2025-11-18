@@ -159,7 +159,7 @@ export const profileSwaggerDocs = {
                   languageWeight: {
                     type: "integer",
                     description: "언어 가중치 (10 단위)",
-                    example: 40,
+                    example: 30,
                   },
                   qualityOfLifeWeight: {
                     type: "integer",

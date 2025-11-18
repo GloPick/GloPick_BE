@@ -14,7 +14,9 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     language,
     desiredJob,
     qualityOfLifeWeights, // OECD Better Life Index 5가지 가중치
-    weights, // 전체 추천 가중치 (언어, 직무, 삶의 질)
+    languageWeight,
+    jobWeight,
+    qualityOfLifeWeight,
   } = req.body;
 
   // OECD Better Life Index 가중치 검증
@@ -53,22 +55,33 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     });
   }
 
-  // 전체 추천 가중치 기본값 설정 및 검증
+  // 전체 추천 가중치 검증
+  if (
+    typeof languageWeight !== "number" ||
+    typeof jobWeight !== "number" ||
+    typeof qualityOfLifeWeight !== "number"
+  ) {
+    return res.status(400).json({
+      code: 400,
+      message: "직무, 언어, QOL 가중치가 필요합니다.",
+      data: {
+        required: ["languageWeight", "jobWeight", "qualityOfLifeWeight"],
+      },
+    });
+  }
+
   const finalWeights = {
-    languageWeight: weights?.languageWeight || 30,
-    jobWeight: weights?.jobWeight || 30,
-    qualityOfLifeWeight: weights?.qualityOfLifeWeight || 40,
+    languageWeight,
+    jobWeight,
+    qualityOfLifeWeight,
   };
 
-  // 전체 가중치 검증
-  const totalWeight =
-    finalWeights.languageWeight +
-    finalWeights.jobWeight +
-    finalWeights.qualityOfLifeWeight;
+  // 전체 가중치 검증 (직무 + 언어 + QOL = 100)
+  const totalWeight = languageWeight + jobWeight + qualityOfLifeWeight;
   if (totalWeight !== 100) {
     return res.status(400).json({
       code: 400,
-      message: "전체 추천 가중치의 합이 100이어야 합니다.",
+      message: "직무, 언어, QOL 가중치의 합이 100이어야 합니다.",
       data: {
         currentTotal: totalWeight,
         weights: finalWeights,

@@ -12,7 +12,25 @@ import { setupSwagger } from "./docs/swagger";
 
 const app = express();
 
-app.use(cors());
+// CORS 설정 - 프론트엔드 Netlify 도메인 추가
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  process.env.FRONTEND_URL || "https://glopick.netlify.app/",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // 라우터 등록

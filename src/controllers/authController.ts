@@ -114,35 +114,35 @@ export const kakaoCallback = async (req: Request, res: Response) => {
     // 4. JWT 토큰 생성
     const token = generateToken(user._id.toString());
 
-  //   const frontendUrl = process.env.FRONTEND_URL || "https://glopick.netlify.app";
-  //   return res.redirect(
-  //     `${frontendUrl}/oauth/kakao?token=${token}&name=${encodeURIComponent(
-  //       user.name
-  //     )}&email=${encodeURIComponent(user.email)}`
-  //   );
-  // } catch (error) {
-  //   console.error("카카오 로그인 오류:", error);
-  //   res.redirect(`${process.env.FRONTEND_URL}/login?error=kakao`);
-  // }
-    return res.status(200).json({
-      code: 200,
-      message: "카카오 로그인 성공!",
-      data: {
-        name: user.name,
-        email: user.email,
-        birth: user.birth,
-        phone: user.phone,
-        token,
-      },
-    });
+    const frontendUrl = process.env.FRONTEND_URL || "https://glopick.netlify.app";
+    return res.redirect(
+      `${frontendUrl}/oauth/kakao?token=${token}&name=${encodeURIComponent(
+        user.name
+      )}&email=${encodeURIComponent(user.email)}`
+    );
   } catch (error) {
     console.error("카카오 로그인 오류:", error);
-    res.status(500).json({
-      code: 500,
-      message: "카카오 로그인 처리 중 오류가 발생했습니다.",
-      data: null,
-    });
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=kakao`);
   }
+  //   return res.status(200).json({
+  //     code: 200,
+  //     message: "카카오 로그인 성공!",
+  //     data: {
+  //       name: user.name,
+  //       email: user.email,
+  //       birth: user.birth,
+  //       phone: user.phone,
+  //       token,
+  //     },
+  //   });
+  // } catch (error) {
+  //   console.error("카카오 로그인 오류:", error);
+  //   res.status(500).json({
+  //     code: 500,
+  //     message: "카카오 로그인 처리 중 오류가 발생했습니다.",
+  //     data: null,
+  //   });
+  //}
 };
 
 // 회원가입

@@ -1,28 +1,29 @@
 {
   "compilerOptions": {
     /* Language and Environment */
-    "target": "es2016",
+    "target": "es2020",
 
     /* Modules */
     "module": "commonjs",
     "rootDir": "./src",
 
     /* Emit */
-
     "outDir": "./dist",
 
     /* Interop Constraints */
-
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
 
     /* Type Checking */
     "strict": true,
 
     /* Completeness */
-
     "skipLibCheck": true
   },
-  "include": ["src", "tsconfig.json"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

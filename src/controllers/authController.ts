@@ -59,7 +59,7 @@ export const kakaoCallback = async (req: Request, res: Response) => {
     console.log("카카오 사용자 정보:", kakaoUser);
     const kakaoId = kakaoUser.id.toString();
     const email = kakaoUser.kakao_account?.email;
-    const name = kakaoUser.kakao_account?.profile?.nickname || "카카오사용자";
+    const name = kakaoUser.kakao_account?.profile?.nickname || "카카오 사용자";
     const phone = kakaoUser.kakao_account?.phone_number;
     const birthday = kakaoUser.kakao_account?.birthday; // MMDD 형식
     const birthyear = kakaoUser.kakao_account?.birthyear; // YYYY 형식
@@ -114,7 +114,7 @@ export const kakaoCallback = async (req: Request, res: Response) => {
     // 4. JWT 토큰 생성
     const token = generateToken(user._id.toString());
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = process.env.FRONTEND_URL || "https://glopick.netlify.app";
     return res.redirect(
       `${frontendUrl}/oauth/kakao?token=${token}&name=${encodeURIComponent(
         user.name

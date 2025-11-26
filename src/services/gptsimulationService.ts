@@ -22,13 +22,14 @@ export const getCityRecommendations = async (input: any) => {
 - 필수 편의시설: ${requiredFacilities}
 - 출발 공항: ${departureAirport}
 
+⚠️ CRITICAL: 모든 응답은 반드시 한국어(Korean)로 작성하세요. 영어 단어를 사용하지 마세요.
 ⚠️ 아래 JSON 형식 그대로만 한글로 응답하세요:
 
 {
   "cities": [
-    { "name": "도시명1", "summary": "한 줄 요약" },
-    { "name": "도시명2", "summary": "한 줄 요약" },
-    { "name": "도시명3", "summary": "한 줄 요약" }
+    { "name": "도시명1", "summary": "한글로 작성된 한 줄 요약" },
+    { "name": "도시명2", "summary": "한글로 작성된 한 줄 요약" },
+    { "name": "도시명3", "summary": "한글로 작성된 한 줄 요약" }
   ]
 }`;
 
@@ -37,7 +38,11 @@ export const getCityRecommendations = async (input: any) => {
     {
       model: "gpt-4",
       messages: [
-        { role: "system", content: "당신은 도시 이주 추천 전문가입니다." },
+        {
+          role: "system",
+          content:
+            "당신은 도시 이주 추천 전문가입니다. 모든 응답은 반드시 한국어로만 작성해야 합니다. You must respond only in Korean language.",
+        },
         { role: "user", content: prompt },
       ],
       max_tokens: 1000,
@@ -73,8 +78,9 @@ export const generateSimulationResponse = async (input: any) => {
 - 필수 편의시설: ${facilitiesStr}
 - 출발 공항: ${departureAirport}
 
+⚠️ CRITICAL: 모든 응답은 반드시 한국어(Korean)로만 작성하세요. 영어를 절대 사용하지 마세요.
 ⚠️ 반드시 순수한 JSON 형식으로만 응답하세요. 추가 설명이나 마크다운 없이 JSON만 반환하세요.
-⚠️ 모든 키는 쌍따옴표로 감싸고, 값은 실제 데이터로 작성하세요.
+⚠️ 모든 키는 쌍따옴표로 감싸고, 값은 실제 데이터로 한글로 작성하세요.
 ⚠️ 응답을 완성하세요. 중간에 끊기면 안 됩니다.
 
 {
@@ -119,7 +125,7 @@ export const generateSimulationResponse = async (input: any) => {
 }
 `;
 
-  const systemMessage = `당신은 해외 이주 시뮬레이션 전문가입니다. 사용자 조건을 바탕으로 실제적이고 현실적인 데이터를 제공합니다.`;
+  const systemMessage = `당신은 해외 이주 시뮬레이션 전문가입니다. 사용자 조건을 바탕으로 실제적이고 현실적인 데이터를 제공합니다. 모든 응답은 반드시 한국어(Korean)로만 작성해야 합니다. You must respond ONLY in Korean language. Never use English words.`;
 
   const response = await axios.post(
     process.env.GPT_API_URL!,
@@ -193,6 +199,7 @@ ${userLanguage ? `사용자 언어 능력: ${userLanguage}` : ""}
 
 각 도시마다 구체적인 이유와 장점을 포함한 상세한 설명을 제공해주세요.
 
+⚠️ CRITICAL: 모든 내용을 반드시 한국어(Korean)로만 작성하세요. 영어를 사용하지 마세요.
 ⚠️ 아래 JSON 형식 그대로만 한글로 응답하세요:
 
 {
@@ -218,7 +225,11 @@ ${userLanguage ? `사용자 언어 능력: ${userLanguage}` : ""}
       {
         model: "gpt-4",
         messages: [
-          { role: "system", content: "당신은 도시 이주 추천 전문가입니다." },
+          {
+            role: "system",
+            content:
+              "당신은 도시 이주 추천 전문가입니다. 모든 응답은 반드시 한국어로만 작성해야 합니다. You must respond only in Korean language.",
+          },
           { role: "user", content: prompt },
         ],
         max_tokens: 1000,
@@ -264,12 +275,14 @@ ${country}에서 ${jobField} 직종으로 취업을 희망하는 한국인에게
 - 구사 언어: ${language}
 - 국적: 한국
 
+⚠️ CRITICAL: 모든 응답은 반드시 한국어(Korean)로만 작성하세요. 영어를 절대 사용하지 마세요.
+
 요청사항:
 1. 해당 직종에 가장 적합한 도시 3곳을 순위별로 추천
-2. 각 도시별로 추천 이유를 구체적으로 설명 (3-4문장)
-3. 각 도시의 주요 장점 3-4개 나열
-4. 해당 직종의 취업 기회에 대한 구체적인 설명
-5. 한국어로 응답
+2. 각 도시별로 추천 이유를 구체적으로 한국어로 설명 (3-4문장)
+3. 각 도시의 주요 장점 3-4개를 한국어로 나열
+4. 해당 직종의 취업 기회에 대한 구체적인 설명을 한국어로 작성
+5. 모든 내용을 한국어로 응답
 
 응답 형식 (JSON):
 {
@@ -292,7 +305,7 @@ ${country}에서 ${jobField} 직종으로 취업을 희망하는 한국인에게
           {
             role: "system",
             content:
-              "당신은 해외 취업 전문 컨설턴트입니다. 각 도시의 특성과 취업 시장을 잘 알고 있으며, 구체적이고 실용적인 조언을 제공합니다.",
+              "당신은 해외 취업 전문 컨설턴트입니다. 각 도시의 특성과 취업 시장을 잘 알고 있으며, 구체적이고 실용적인 조언을 제공합니다. 모든 응답은 반드시 한국어(Korean)로만 작성해야 합니다. You must respond ONLY in Korean language.",
           },
           {
             role: "user",

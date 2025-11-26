@@ -131,14 +131,14 @@ export class CountryRecommendationService {
 
   // 언어 적합도 점수 계산 (0-100)
   // 100점: 사용자 언어가 국가 공식 언어에 포함
-  // 70점: 영어, 스페인어, 프랑스어, 독일어 (주요 국제 언어)
-  // 30점: 그 외 언어
+  // 50점: 사용자가 주요 국제 언어 선택 + 국가가 다른 주요 국제 언어 사용
+  // 20점: 그 외 언어 (매칭 안됨)
   private static calculateLanguageScore(
     country: CountryData,
     userLanguage: string
   ): number {
     if (!country.languages || country.languages.length === 0) {
-      return 30; // 언어 정보가 없는 경우 기본 점수
+      return 20; // 언어 정보가 없는 경우 기본 점수
     }
 
     const userLangLower = userLanguage.toLowerCase();
@@ -162,30 +162,21 @@ export class CountryRecommendationService {
       "german",
     ];
 
-    if (majorInternationalLanguages.includes(userLangLower)) {
-      // 사용자 언어가 주요 국제 언어인 경우, 해당 언어가 국가에서 사용되는지 확인
-      const countryHasUserLanguage = country.languages.some((lang) =>
-        lang.toLowerCase().includes(userLangLower)
-      );
-
-      if (countryHasUserLanguage) {
-        return 100; // 이미 위에서 체크했지만 명확성을 위해
-      }
-    }
-
-    // 국가가 주요 국제 언어 중 하나를 사용하는지 확인
+    const userIsUsingMajorLanguage =
+      majorInternationalLanguages.includes(userLangLower);
     const countryHasMajorLanguage = country.languages.some((countryLang) =>
       majorInternationalLanguages.some((majorLang) =>
         countryLang.toLowerCase().includes(majorLang)
       )
     );
 
-    if (countryHasMajorLanguage) {
-      return 70; // 주요 국제 언어를 사용하는 국가
+    // 사용자가 주요 국제 언어를 사용하고, 국가도 주요 국제 언어를 사용하는 경우
+    if (userIsUsingMajorLanguage && countryHasMajorLanguage) {
+      return 50; // 국제 언어로 소통 가능
     }
 
-    // 3. 매칭되지 않는 경우
-    return 30; // 기본 점수
+    // 3. 매칭되지 않는 경우 - 언어 장벽이 높음
+    return 20; // 낮은 점수
   }
 
   // 직무 기회 점수 계산 (0-100) - 전체 고용률 50% + ISCO 직무 고용률 50%

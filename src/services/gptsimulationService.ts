@@ -83,6 +83,11 @@ export const generateSimulationResponse = async (input: any) => {
 ⚠️ 모든 키는 쌍따옴표로 감싸고, 값은 실제 데이터로 한글로 작성하세요.
 ⚠️ 응답을 완성하세요. 중간에 끊기면 안 됩니다.
 
+⚠️ 중요: ${selectedCity}에서 실제로 사용되는 현지 플랫폼과 서비스를 추천하세요!
+- shortTermHousingOptions: ${selectedCity}의 실제 단기 숙소 (호스텔, 에어비앤비, 호텔 등)
+- longTermHousingPlatforms: ${selectedCity}/해당 국가에서 실제로 사용하는 부동산 플랫폼 (예: 영국-Rightmove, Zoopla / 독일-ImmobilienScout24 / 프랑스-SeLoger 등)
+- jobSearchPlatforms: ${selectedCity}/해당 국가의 실제 구인구직 사이트 (예: 영국-Indeed UK, Reed / 독일-StepStone, Xing 등)
+
 {
   "simulation": {
     "recommendedCity": "${selectedCity}",
@@ -106,13 +111,13 @@ export const generateSimulationResponse = async (input: any) => {
       "cpi": "한국 대비 물가 비교 (1문장)"
     },
     "initialSetup": {
-      "shortTermHousingOptions": ["옵션1", "옵션2", "옵션3"],
-      "longTermHousingPlatforms": ["플랫폼1", "플랫폼2"],
+      "shortTermHousingOptions": ["${selectedCity}의 실제 단기 숙소 옵션1", "${selectedCity}의 실제 단기 숙소 옵션2", "${selectedCity}의 실제 단기 숙소 옵션3"],
+      "longTermHousingPlatforms": ["${selectedCity} 국가의 실제 부동산 플랫폼1", "${selectedCity} 국가의 실제 부동산 플랫폼2"],
       "mobilePlan": "통신 정보 (1문장)",
       "bankAccount": "계좌 개설 정보 (1문장)"
     },
     "jobReality": {
-      "jobSearchPlatforms": ["플랫폼1", "플랫폼2", "플랫폼3"],
+      "jobSearchPlatforms": ["${selectedCity} 국가의 실제 구인구직 플랫폼1", "${selectedCity} 국가의 실제 구인구직 플랫폼2", "${selectedCity} 국가의 실제 구인구직 플랫폼3"],
       "languageRequirement": "언어 요구사항 (1문장)",
       "visaLimitationTips": "비자 관련 팁 (1문장)"
     },
